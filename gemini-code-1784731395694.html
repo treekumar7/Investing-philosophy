@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>अध्यात्म, योग और तंत्र दर्शन</title>
+    <style>
+        :root {
+            /* Base Theme Variables */
+            --primary-color: #4a148c; /* Deep Purple */
+            --secondary-color: #e65100; /* Deep Orange */
+            --bg-color: #f5f5f6;
+            --page-bg: #ffffff;
+            --text-color: #333333;
+            
+            /* Typography Variables */
+            --base-font-size: 16px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        header {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 15px 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            z-index: 100;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+        }
+
+        /* Settings Bar */
+        .settings-bar {
+            display: flex;
+            gap: 20px;
+            margin: 15px;
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-group label {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .btn-size {
+            background-color: white;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+            padding: 5px 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-size:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .theme-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Theme Colors for Buttons */
+        .theme-light { background-color: #ffffff; }
+        .theme-sepia { background-color: #f4ecd8; }
+        .theme-mint { background-color: #eaf4f0; }
+        .theme-dark { background-color: #2d2d2d; }
+
+        /* 3D Book Container */
+        .book-container {
+            position: relative;
+            width: 95%;
+            max-width: 900px;
+            height: 65vh; /* Adjusted for settings bar */
+            perspective: 2000px;
+            margin: 10px 0 20px 0;
+        }
+
+        .page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--page-bg);
+            padding: 30px 40px;
+            box-sizing: border-box;
+            border-radius: 10px 15px 15px 10px;
+            box-shadow: inset 5px 0 15px rgba(0,0,0,0.05), 0 10px 25px rgba(0,0,0,0.2);
+            border-left: 3px solid rgba(0,0,0,0.1);
+            overflow-y: auto;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1), 
+                        opacity 0.8s ease-in-out, 
+                        visibility 0.8s,
+                        background-color 0.5s ease;
+            visibility: hidden;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        /* Scrollbar styling */
+        .page::-webkit-scrollbar { width: 8px; }
+        .page::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 4px; }
+        .page::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
+
+        .page.active {
+            visibility: visible;
+            opacity: 1;
+            transform: rotateY(0deg);
+            z-index: 10;
+        }
+
+        .page.flipped {
+            visibility: hidden;
+            opacity: 0;
+            transform: rotateY(-120deg);
+            z-index: 5;
+        }
+
+        .page.upcoming {
+            visibility: hidden;
+            opacity: 0;
+            transform: rotateY(0deg);
+            z-index: 1;
+        }
+
+        /* Dynamic Typography based on --base-font-size */
+        .page h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: calc(var(--base-font-size) * 1.6);
+        }
+        
+        .page h3 {
+            color: var(--secondary-color);
+            font-size: calc(var(--base-font-size) * 1.3);
+            margin-top: 20px;
+        }
+
+        .page p, .page li {
+            font-size: calc(var(--base-font-size) * 1.1);
+            line-height: 1.8;
+            margin-bottom: 15px;
+            text-align: justify;
+            color: var(--text-color);
+        }
+
+        .page ul, .page ol {
+            margin-left: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: var(--base-font-size);
+        }
+
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        /* Navigation Controls at the Bottom */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        button.nav-btn, select.nav-select {
+            padding: 12px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        button.nav-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        button.nav-btn:hover {
+            background-color: #ff6f00;
+            transform: translateY(-2px);
+        }
+
+        button.nav-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        select.nav-select {
+            background-color: white;
+            color: var(--primary-color);
+            font-weight: bold;
+            border: 2px solid var(--primary-color);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            .book-container { height: 60vh; }
+            .page { padding: 20px; }
+            header h1 { font-size: 1.4rem; }
+            button.nav-btn, select.nav-select { padding: 10px 15px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>अध्यात्म, योग और तंत्र दर्शन</h1>
+    </header>
+
+    <!-- Top Settings Bar for Text Size and Theme -->
+    <div class="settings-bar">
+        <div class="setting-group">
+            <label>अक्षर आकार (Text Size):</label>
+            <button class="btn-size" onclick="changeFontSize(-1)">A-</button>
+            <button class="btn-size" onclick="changeFontSize(1)">A+</button>
+        </div>
+        <div class="setting-group">
+            <label>पृष्ठभूमि (Background):</label>
+            <button class="theme-btn theme-light" title="Light" onclick="setTheme('light')"></button>
+            <button class="theme-btn theme-sepia" title="Sepia" onclick="setTheme('sepia')"></button>
+            <button class="theme-btn theme-mint" title="Mint" onclick="setTheme('mint')"></button>
+            <button class="theme-btn theme-dark" title="Dark" onclick="setTheme('dark')"></button>
+        </div>
+    </div>
+
+    <!-- 3D Book Container -->
+    <div class="book-container">
+        
+        <!-- Page 1 -->
+        <div class="page active" id="page-1">
+            <h2>अध्यात्म का उद्देश्य और मन</h2>
+            <p>अध्यात्म का उद्देश्य - मन के पार जा कर आत्मा में स्थित होना। बाद में यही आत्मा परमात्मा मै स्थित होती है।</p>
+            <p>दो मार्ग है:</p>
+            <ol>
+                <li>एक तो सीधे पार चले जाना( अष्टावक्र गीता)</li>
+                <li>एक मन को शुद्ध करके मन के पार जाना।(भक्ति,योग,तंत्र)</li>
+            </ol>
+            <p>मनुष्य का मन/जीवन पंच विकार(काम, क्रोध,लोभ,मोह, अहंकार) के चारों ओर घूमता रहता है तंत्र में अष्ट पाश की बात कही है।</p>
+            <p>(शिव सूत्र) चार अवस्था है, जागृत,स्वप्न, सुषुप्ती, तुरिया। सभी धर्म का उद्देश्य चौथी अवस्था को प्राप्त करना है।</p>
+            <p>वास्तव में कोई मार्ग नहीं है ये मन के कारण प्रतीत होते है। धर्म के सारे सिद्धांत बस इशारा मात्र है(जैसे कोई चंद्रमा की तरफ इशारा करे और लोग चंद्रमा को न देख बस उंगली देखे, इस बात का ध्यान रखना है नहीं तो धर्म के सिद्धांत ही हानि पहुंचने लगेगे) इसलिए बिना ग्रंथ के भी ज्ञान प्राप्त हो सकता है। बस ये ध्यान रखना है।</p>
+            <p>सिद्धांत में भी ये ध्यान रखना है कि क्या मूल सिद्धांत ( core principle)है और कौन से नियम है।</p>
+            <p>नियम (frame)का उद्देश्य core principle (photo) को सहायता प्रदान करना है। जैसे photo और frame। इसका होना न होना प्रमुख नहीं है। इस लिए सभी धर्म अलग अलग प्रतीत होते है। Core principle किसी भी धर्म में नहीं बदलते।</p>
+        </div>
+
+        <!-- Page 2 -->
+        <div class="page upcoming" id="page-2">
+            <h2>दर्शन, शिव-शक्ति और विज्ञान</h2>
+            <p>दर्शन - वैदिक मत में षड दर्शन की बात होती है। ये सभी दर्शन मन को समझने के लिए है। बिना इन्हें जाने भी पार का सकते हो पर तार्किक व्यक्ति को सिद्धांत चाहिए। जबकि मन के पार ही जाना है।</p>
+            <p>परमात्मा की यात्रा साकार से निराकार की यात्रा है, प्रकृति से परमात्मा, पशु से पशुपति की यात्रा ,शक्ति से शिव तक की यात्रा। शिव और शक्ति को शास्त्र ने अद्वैत कहा है ये दो अलग प्रतीत होते है पर अलग नहीं है जैसे energy and matter। वास्तव में energy and matter प्रकृति मै आते है, शिव क्या है ये पता नहीं कर सकते है बस अनुभति कर सकते है। क्योंकि वो तुम्हारा स्वरूप है।</p>
+            <p>लोग ये भी बोलते है कि अगर सारी किताब नष्ट कर दो तो विज्ञान वैसे ही फिर से बन जाएगा पर धर्म बदल जाएगा। ये गलत धारणा है, अगर प्रेम के गीत नष्ट कर दो तो जो नया गीत बनेंगे वो अलग होगे। उसका ये मतलब नहीं कि कि अब प्रेम नहीं रहा। आपको विज्ञान और धर्म में अंतर पता होना चाहिए</p>
+        </div>
+
+        <!-- Page 3 -->
+        <div class="page upcoming" id="page-3">
+            <h2>सनातन धर्म के मार्ग और भक्ति</h2>
+            <p>सनातन धर्म में तीन प्रमुख मार्ग है भक्ति, योग और तंत्र। तंत्र मैं भी भक्ति योग और कर्मकांड का उपयोग होता है। उसे तांत्रिक भक्ति और तांत्रिक योग कहते हैं। तंत्र में यंत्र उपासना, आवरण पूजा भी होता है।</p>
+            <p>वैदिक मत में इन तीनों का ही उपयोग किया गया है| वेदाचार्य के अलावा और भी मत है सनातन धर्म मैं जैसे समाचार, कोलाचार, दक्षिणाचार, वाममार्ग इत्यादि। वास्तव में वेदाचार्य दक्षिणीचार्य के अंदर आता है वैदिक मत में जो कर्मकांड का भाग है वह तंत्र से आए हैं। वैदिक मत में जो सप्त ऋषि थे उनको भी तंत्र का ज्ञान था तो उनके अपने तंत्र के कुल थे और भी बहुत सारे तंत्र के कुल थे प्रमुखता 64 कुलो की बात होती है। जो सनातन धर्म में मूर्ति पूजा है वह भी तंत्र से आयी है।</p>
+            <p>भक्ति में 9 मार्ग होते हैं इससे नवधा भक्ति कहते हैं इन में से एक पर भी चलने से ज्ञान की प्राप्ति हो जाती है</p>
+            <ul>
+                <li>भक्ति सूत्र नारद जी द्वारा, अथातो भक्ति जिज्ञासा शांडिल्य ऋषि द्वारा</li>
+                <li>भक्ति मार्ग में जिसे जप कहा गया है उसको भी चार भागों में विभक्त किया गया है परा,पश्यति माध्यम, वैखरी,वाणी के अनुसार।</li>
+                <li>जप को इस लिए भी श्रेष्ठ बताया गया है इसको कही भी कर सकते है कोई बाह्य सामग्री की जरूरत नहीं है</li>
+            </ul>
+            <p>श्रवण के मैं भगवान की कहानियों का उपयोग किया जाता है उसके लिए पुराण ग्रंथ बहुत अच्छे हैं। पर याद रखना है कि पुराण ग्रंथ कोडेड लैंग्वेज में इनको तंत्र, भक्ति,योग का सबमिशन करके लिखा गया। जैसे चंद्रमा की 27 पत्नी बताई गई हैं वह 27 नक्षत्र के नाम है जो एक सेलीस्टियल इवेंट को एक स्टोरी के रूप में बताया गया है। पुराण की जो कहानी है उनमें शब्द अर्थ की जगह भावार्थ या रहस्यर्थ या सांप्रदायिक, गूढ़ाअर्थ इस तरह से कोई भी अर्थ किया जा सकता है।</p>
+        </div>
+
+        <!-- Page 4 -->
+        <div class="page upcoming" id="page-4">
+            <h2>योग-निरूपण (शिव पुराण)</h2>
+            <p>योग में अष्टांग मार्ग है योग में ग्रंथ योग तत्व उपनिषद, हठ योग प्रतिपदीका,योग चिंतामणि, पतंजलि योग सूत्र इत्यादि सिद्ध मत के अनुसार 108 प्रकार के योग होते हैं जिसमें अग्नि योग से शुरुआत होती हैं।</p>
+            <h3>Source shiv puran - सैंतीसवां अध्याय: योग-निरूपण</h3>
+            <p>मुनि उपमन्यु बोले—हे केशव! अब मैं आपको योग-विधि के बारे में बताता हूं। जिसके द्वारा सभी विषयों से निवृत्ति हो और अंत:करण की सब वृत्तियां शिवजी में स्थित हो जाएं, वह परम योग है। योग पांच प्रकार का होता है। मंत्र योग, स्पर्श योग, भावयोग, अभाव योग और महायोग।</p>
+            <ul>
+                <li>मंत्रों का उनके अर्थ सहित ज्ञान होना महायोग कहलाता है।</li>
+                <li>मंत्रों को प्राणायाम द्वारा सिद्ध करना स्पर्श योग कहलाता है।</li>
+                <li>जब जिह्वा मंत्रों को स्पर्श न करते हुए भी उनका जाप करती है तो वह भावयोग कहलाता है।</li>
+                <li>प्रलय के समय से संबद्ध पूरे संसार का विचार अभावयोग कहलाता है।</li>
+                <li>जब साधना करने वाले की सभी मानसिक वृत्तियां भगवान शिव से जुड़ जाएं और वह नित्य शिव-चिंतन में मग्न रहे ऐसी दशा महायोग कहलाती है।</li>
+            </ul>
+            <p>सांसारिक बंधनों से मुक्ति की कामना करने वाले मनुष्य ही इस चिंतन और वैराग्य को अपने जीवन में अपनाकर महायोग को प्राप्त करते हैं। हमारे शरीर में रहने वाली प्राणवायु को रोकना प्राणायाम कहलाता है। प्राणायाम रेचक, पूरक और कुंभक तीन प्रकार का होता है। साधक को इनका अभ्यास करना चाहिए क्योंकि इसी से शरीर की शुद्धि होती है।</p>
+            <p>प्राणायाम सगर्भ और अगर्भ दो प्रकार का होता है। जप और ध्यान वाला प्राणायाम सगर्भ कहलाता है परंतु जिसमें जप और ध्यान नहीं करते, वह अगर्भ प्राणायाम कहलाता है। योगीजन सगर्भ प्राणायाम करते हैं। प्राणवायु पर विजय प्राप्त कर लेने पर सभी वायु उस योगी के अधिकार में आ जाती हैं। प्राणायाम शरीर को पुष्ट, स्वस्थ और निरोगी बनाता है। इसके नियमित अभ्यास से कफ, मूत्र, पुरीष आदि कम हो जाते हैं।</p>
+            <p>समस्त इंद्रियों को अपने वश में कर लेना प्रत्याहार कहलाता है। इंद्रियों को अपने वश में रखने से स्वर्ग और न रखने से नरक की प्राप्ति होती है। इसलिए अपने चित्त को एकाग्र रखना चाहिए। भगवान शिव, जो कि सबके ईश्वर हैं, त्रिलोकीनाथ हैं, का ध्यान करने से योगी का कल्याण होता है। अपने पूरे शरीर के साथ-साथ इंद्रियों पर काबू पाने से आत्मा का उद्धार होता है।</p>
+        </div>
+
+        <!-- Page 5 -->
+        <div class="page upcoming" id="page-5">
+            <h2>तंत्र और कर्मकांड</h2>
+            <p>तंत्र में पूजा पद्धति बहुत विस्तार में है</p>
+            <p>इसमें पंचकोश, त्रिकोश, आवरण पूजा, कुंडली जागरण,मुद्रा(महामुद्रा, खेचरी मुद्रा इत्यादि),न्यास(षड़ंग, ऋषि,मात्र,प्रणव,सृष्टि,संहार,नक्षत्र न्यास इत्यादि),वर्णमाला जिसे मातृका पूजा का भी बोलते हैं इनका बेसिक जानना बहुत जरूरी है।</p>
+            <p>पांचों उपचार, षोडश उपचार, सहस्त्र उपचार, अनन्त उपचार। दस महाविद्या,दुर्गा सप्तशती ये सब तंत्र से ही आया है।</p>
+            <h3>कर्मकांड</h3>
+            <p>कर्मकांड - दो प्रकार के होते है:</p>
+            <ul>
+                <li>बाह्य कर्मकांड (पांचोंपचार, द्रव्य मय यज्ञ,व्रत,)</li>
+                <li>आंतरिक कर्मकांड( प्राण से प्राण में यज्ञ, उपवास,धारणा,ध्यान,भक्ति, समाधि)</li>
+            </ul>
+            <p>आंतरिक कर्मकांड बाह्य कर्मकांड से ज्यादा प्रमुख है। तंत्र में कुछ विधि बाह्य और आंतरिक कर्मकांड दोनों को लेके चलती है। जैसे द्रव्य मय यज्ञ के साथ आंतरिक यज्ञ श्वास के द्वारा। बाह्य और आंतरिक यंत्र को आवरण पूजा।</p>
+            <p>अगर आप सांसारिक जीवन पे प्रति ज्यादा आसक्त है तो बाह्य कर्मकांड से आंतरिक कर्मकांड की यात्रा करनी होती है वैराग्य वाले जन सीधे आंतरिक कर्मकांड की ओर जाते है।</p>
+        </div>
+
+        <!-- Page 6 -->
+        <div class="page upcoming" id="page-6">
+            <h2>साधक और उपासना के अंग</h2>
+            <p>साधक - ये तीन तरह के होते है: १. पशु भाव २. वीर भाव ३. दिव्य भाव</p>
+            <h3>तंत्र, भक्ति और उपासना के तत्व</h3>
+            <ul>
+                <li>कुण्डलिनी योग</li>
+                <li>मंत्र पूजा</li>
+                <li>मूर्ति पूजा</li>
+                <li>सहस्रनाम</li>
+                <li>कवचपाठ</li>
+                <li>बीज मंत्र</li>
+                <li>मुद्रा</li>
+                <li>न्यास</li>
+            </ul>
+            <p>कवच देवता का शरीर है पटल देवता का सिर है। पद्धति देवता के हाथ है सहस्रनाम मुख है और स्तोत्र देवता के पाद हैं इन पांच अंगो के साथ जप, होम, तर्पण मार्जन और ब्रह्मण भोज मिलाकर दशांग पूर्ण होते हैं (Source - श्री बटुक भैरव साधना)</p>
+            
+            <h3>पंचोपचार पूजा (Hand Diagram)</h3>
+            <ul>
+                <li>तेजतत्व - दीपदान (Thumb)</li>
+                <li>वायुतत्व - धूप (Index Finger)</li>
+                <li>आकाशतत्व - पुष्पार्चण (Middle Finger)</li>
+                <li>पृथ्वीतत्व - गन्धार्चण (Ring Finger)</li>
+                <li>जलतत्व - नैवेद्य (फल और दाल) (Little Finger)</li>
+                <li>ताम्बूल – सर्वोपचार</li>
+            </ul>
+
+            <h3>षोडशोपचार</h3>
+            <p>आवाहन (बुलाना), आसन (बैठने का स्थान), पाद्य (चरण धोने के लिए जल), अर्घ्य (जल अर्पित करना), आचमन (आसमान/शुद्ध जल), मधुपर्क (दही-मधु का मिश्रण), स्नान (स्नान कराना), वस्त्र (वस्त्र अर्पित करना), आभूषण (गहने पहनाना), चंदन (गंध लेपन), पुष्प (फूल चढ़ाना), धूप (धूप दिखाना), दीप (दीपक जलाना), नैवेद्य (भोग लगाना), तांबूल (पान-सुपारी), नमस्कार / वंदना (प्रणाम करना)</p>
+        </div>
+
+        <!-- Page 7 -->
+        <div class="page upcoming" id="page-7">
+            <h2>पंचकोश (शुद्धि) और लक्ष्मीतन्त्रम्</h2>
+            <ol>
+                <li><span class="highlight">अन्नमय कोश</span> - आसन, उपवास, तत्व शुद्धि और तपस्या</li>
+                <li><span class="highlight">प्राणमय कोश</span> - प्राण शक्ति से मनुष्य का ऐश्वर्य, पुरुषार्थ, तेज, ओज एवं यश बढ़ते हैं। पाँच महा प्राण - प्राण, अपान, व्यान, समान, उदान। पाँच लघु प्राण (उपप्राण) - बन्ध, मुद्रा और प्राणायाम द्वारा प्राणमय कोश सिद्ध होता है।</li>
+                <li><span class="highlight">मनोमय कोश</span> - ध्यान, त्राटक, तन्मात्रा और जप की साधना से मनोमय कोश उज्ज्वल होता है।</li>
+                <li><span class="highlight">विज्ञानमय कोश</span> - संसार और अपना ठीक-ठीक ज्ञान होने को ही विज्ञानवेत्ताओं ने विज्ञान कहा है। सोऽहं की साधना, आत्मानुभूति स्वरोका संयम और ग्रन्थि-भेद विज्ञानमय कोश सिद्ध होता है।</li>
+                <li><span class="highlight">आनन्दमय कोश</span> - नाद, बिन्दु, कला की पूर्ण साधना से आनन्दमय कोश जाग्रत होता है।</li>
+            </ol>
+            <p>विद्वानो ने गायत्री को भूलोक की कामधेनु माना है।</p>
+
+            <h3>लक्ष्मीतन्त्रम् वर्णमाला मैपिंग</h3>
+            <p>
+                म (पुरुष) भ (प्रकृति) ब (बुद्धि) फ (अहंकार) प (मन) <br>
+                न (श्रोत) ध (त्वक्) द (चक्षु) थ (रसना) त (घ्राण) <br>
+                ण (वाक्) ढ (पाणि) ड (पाद) ठ (पायु) ट (उपस्थ) <br>
+                ञ (शब्द) झ (स्पर्श) ज (रूप) छ (रस) च (गन्ध) <br>
+                ङ (वियत्/आकाश) घ (वायु) ग (तेज) ख (जल) क (पृथिवी)
+            </p>
+            <p>अ-ब्रह्मा अथवा चित्कला निणी अनुत्तरीय विमर्श के ही रूप में प्रसार करके आ-रूपिणी आनन्द शक्ति, इ ई रूपिणी इच्छाशक्ति उ ऊ रूपिणी ज्ञानशक्ति (उन्मेष और ऊनता) ऋ से औ तक क्रियाशक्ति (Source - श्री परात्रींशिका)</p>
+        </div>
+
+        <!-- Page 8 -->
+        <div class="page upcoming" id="page-8">
+            <h2>अष्टमातृका, भैरव और यंत्र उपासना</h2>
+            <h3>अष्टमातृका</h3>
+            <ol>
+                <li>ब्राह्मी - काम - सृजन करती है</li>
+                <li>माहेश्वरी - क्रोध - ध्वंस एवं संहार करती है</li>
+                <li>कौमारी - लोभ</li>
+                <li>वैष्णवी - मोह - सारे संसार को मोहित करती है।</li>
+                <li>वाराही - मद - अंहकार</li>
+                <li>इन्द्राणी - मात्सर्य- ईर्ष्यालु</li>
+                <li>चामुण्डा - पाप</li>
+                <li>महालक्ष्मी - पुण्य पुण्य</li>
+            </ol>
+            <p>अष्ट भैरव</p>
+
+            <h3>यंत्र उपासना ,आवरण पूजा और ध्यान</h3>
+            <p>सभी यंत्र में बिंदु ,त्रिकोण चतुष्कोण, अष्ट दल, षोडश दल,32 दल, सहस्त्र दल इत्यादि से बना होता है यंत्र के अंत में भूपूर से चतुषद्वार भी बोलते हैं</p>
+            <p>आवरण पूजा सृष्टि कम और संहार क्रम में होती है जब भूपूर से बिंदु की ओर जाते हैं तो यह संहार क्रम होता है और बिंदु से भूपूर की ओर जाते हैं तो सृष्टि कम होता है ।</p>
+            <p>यंत्र का ध्यान हृदय चक्र में, आज्ञा चक्र में और सहस्त्र चक्र में क्या जाता है। जिसमें भूपुर से बिंदु की यात्रा या बिंदु से भूपूर की यात्रा की धारणा की जाती है, एक एक दल पे, त्रिकोण पे जो भी शक्ति होती है उसका धारणा और ध्यान किया जाता है धारणा से ध्यान, ध्यान से समाधि की और जाया जाता है</p>
+            
+            <h3>उपासना के चार अंग होते हैं</h3>
+            <ol>
+                <li>अर्चना- शारीरिक क्रिया होती है, पंचोपचार, षोडशोपचार, पूजा सामग्री, आसान, मूर्ति</li>
+                <li>स्तुति- वाचिक क्रिया है इस मै बाह्य साधनों की आवश्यकता नहीं है</li>
+                <li>जप - मानसिक है</li>
+                <li>ध्यान- मन और बुद्धि के परे ( स्रोत्र -ललिता सहस्त्र नाम विवेचन)</li>
+            </ol>
+        </div>
+
+        <!-- Page 9 -->
+        <div class="page upcoming" id="page-9">
+            <h2>रहस्य, रामायण और संध्या वंदन</h2>
+            <p><span class="highlight">Fun fact:</span> रामायण के २४ हजार श्लोक गायत्री के २४ श्लोकों का विस्तार है काव्य के रूप में।</p>
+            <p>सुंदरकांड का पाठ, आंतरिक यात्रा है कुंडली चक्रों में (मूलाधार, स्वाधिष्ठान, मणिपूरक, अनाहत, विशुद्धि, आज्ञा, सहस्रार)</p>
+
+            <h3>चार रात्रि</h3>
+            <ol>
+                <li>कालरात्रि (दीपावली की रात)</li>
+                <li>महाशिवरात्रि (फाल्गुन कृष्ण चतुर्दशी)</li>
+                <li>मोहरात्रि (जन्माष्टमी की रात)</li>
+                <li>दारुणरात्रि (होली की रात)</li>
+            </ol>
+
+            <h3>संध्या वंदन</h3>
+            <p>ये भी बाह्य और आंतरिक होता है। चार संध्या होती है। ये तीन संध्या क्रमशः हृदय,बिंदु और ब्रह्मरंध मै स्थित है चौथी का कोई स्वरूप नही,वो परमशिव मै विराजमान है इसलिए इसको परमा संध्या भी कहते है</p>
+
+            <h3>हाथ में तीर्थ</h3>
+            <p>तर्जनी अँगुली के मूलभाग में पितरों का, कनिष्ठा के मूलभाग में प्रजापति का, अङ्गुष्ठ के मूलभाग में ब्रह्मा का और हाथ के अग्रभाग में देवताओं का तीर्थ है। दाहिने हाथ की हथेली में अग्नि का, बायीं हथेली में सोम का तथा अँगुलियों के सभी पर्वों एवं संधियों में ऋषियों का तीर्थ है। संध्या के ध्यान के पश्चात् शिव-सम्बन्धी मन्त्रों द्वारा तीर्थ (जलाशय) को शिवस्वरूप बनाकर 'आपो हि ष्ठा०' इत्यादि संहिता-मन्त्रों द्वारा उसके जल से मार्जन करे। बायें हाथ पर तीर्थ के जल को गिराकर उसे रोके रहे और दाहिने हाथ से मन्त्रपाठपूर्वक क्रमशः सिर का सेचन करना 'मार्जन' कहलाता है॥ (अग्नि पुराण)</p>
+        </div>
+
+        <!-- Page 10 -->
+        <div class="page upcoming" id="page-10">
+            <h2>कर्मकांड पाताल - यज्ञ का विज्ञान</h2>
+            <p>भक्ति - सकाम ( इस मै नियम है)और निष्काम भक्ति( इस मै कोई नियम नहीं)। हर देवता आंतरिक रूप से परब्रह्म होता है। देवता के पास त्रिशरीर होते है: १.कला देह २.तेज देह ३. ब्रह्म देह</p>
+            
+            <h3>हम यज्ञ हवन क्यों करते हैं?</h3>
+            <p>क्योंकि अगर आश्वलायनश्रौतसूत्रम् को आप पढ़ेंगे तो आपको समझ में आएगा सृष्टि में दो तत्व अग्नि और सोम की वजह से सृष्टि में जीवन होता है। अब जैसे कि हम खाना खाते हैं अन्न आपके पेट में जाता है उससे जो केमिकल रिएक्शन होता है जो heat generation होती है उसी को जठर अग्नि बोला है। जो अग्नि देवता है वह god of heat है सूर्य देवता god of light है चंद्र देवता god of som (अमृत तत्व) है। अब इस अग्नि से यह जो भोजन है यह रस के रूप में रूपांतरित होगा यही रस शरीर को पोषण देगा। क्योंकि यह शरीर रस शरीर को पोषण दे रहा है तो इसको सोम रस बोला है अमृत तत्व यही सोम रस का अर्थ अलग देवताओं के लिए अलग होता है मानव के लिए अलग है वृक्षों में अलग है। लेकिन कुल मिलाकर वही है कि वह उसको पोषण दे ऐसा तो उसे ही सोम कहा गया है। इसलिए हम यज्ञ में अन्य की आहुति देते हैं यह उसका प्रतीक है जो सृष्टि में निरंतर हो रहा है( इसी अग्नि और सोम के शाश्वत सहयोग से ही यह विश्व परिणाम होता है)।</p>
+            <p>ब्राह्मणकालीन आचार्यों ने अग्नि को कर्मकाण्डीय याज्ञिक दृष्टि से तीन रूपों में विभक्त कर उसकी तीन संज्ञायें दी गार्हपत्य, अन्वाहार्यपचन तथा आहवनीय। पृथिवी-स्थानीय अग्नि, जो सभी जीवधारियों के शरीररूप गृह में अधिपति होकर निवास करता है, वही गृहपति है। यज्ञवेदि पर वृत्ताकार कुण्ड में अरणिमन्थन करके जो अग्नि स्थापित किया जाता है वह गार्हपत्य अग्नि कहलाता है। अरणिमन्थन से अग्नि को गार्हपत्य कुण्ड में स्थापित करने की प्रक्रिया को 'अग्न्याधान' कहा जाता है। उसी यज्ञवेदि पर अर्धवृत्ताकार जो कुण्ड बनाया जाता है उसकी 'दक्षिणाग्नि' संज्ञा है। इस अग्नि को 'अन्वाहार्यपचन' भी कहते हैं, क्योंकि इसी में ऋत्विजों के लिये चरु पकाया जाता है। वस्तुतः यह अग्नि अन्तरिक्षलोक का प्रतीक है। 'अन्वाहार्य' का शाब्दिक अर्थ है अन्न या भोजन। पार्थिव जीवों की उत्पत्ति तथा उनके भोजन के लिये अग्नि में सोम रूप विविध अन्न को पचाने की शाश्वत प्रक्रिया अन्तरिक्ष में ही हो रही है। इस प्रक्रिया में अन्तरिक्ष-स्थानीय 'वायु' की महत्त्वपूर्ण भूमिका होती है। वायु ही अग्नि को नित्य प्रवहमान रखता है。</p>
+            <p>(Note:- वायु जो है इसका english translation gas है,अंतरिक्ष में यही gas hydrogen cloud है जो सूर्य में अग्नि उत्पन्न करता हैऔर पृथ्वी पर यही gas air के रूप में है)</p>
+            
+            <h3>Yajna-angas (यज्ञाङ्ग स्वरूपम्)</h3>
+            <p>An interesting concept Yajna-angas may be considered, where the yajna-angas are equated to a person's physical and mental angas (शरीरादि अङ्गानि । body and other parts) representing the holistic role of each physical entity in the yajna purusha.</p>
+            
+            <table>
+                <tr><th>Yajamana's-anga (physical and mental attributes)</th><th>Yajna-anga (यज्ञाङ्गानि)</th></tr>
+                <tr><td>Atma</td><td>Yajamana</td></tr>
+                <tr><td>Shraddha</td><td>Yajamana patni</td></tr>
+                <tr><td>Yajamana's sharira</td><td>Fuel in Yajna</td></tr>
+                <tr><td>Yajamana's hrdayam</td><td>Yajnavedi</td></tr>
+                <tr><td>Yajamana's shika</td><td>Handful of Kusha grass</td></tr>
+                <tr><td>Kamana (Desires)</td><td>Ajya (the ghee offering)</td></tr>
+                <tr><td>Krodha (Anger)</td><td>Pashu (the animal offering)</td></tr>
+                <tr><td>Tapasya (Penance)</td><td>Agni (the fires)</td></tr>
+                <tr><td>Yajamana's offering of Dakshina (fee)</td><td>Vani (the speech)</td></tr>
+                <tr><td>Eyes</td><td>Adhvaryu (Rtvik)</td></tr>
+                <tr><td>Manas (Mind)</td><td>Brahma (Rtvik)</td></tr>
+                <tr><td>Ears</td><td>Agnit (अग्नीत्) rtviks</td></tr>
+            </table>
+            
+            <p>All the activities of a human being are also considered as yajnas; many of these are performed mentally as described in the Aranyakas and Upanishads. न्यास</p>
+            
+            <h3>Book for reference</h3>
+            <ul>
+                <li>पुराण , उपनिषद</li>
+                <li>श्रीमद्भगवद्गीता</li>
+                <li>अष्टावक्र गीता</li>
+                <li>समाधि के सप्त द्वार,</li>
+                <li>योग तत्व उपनिषद,</li>
+                <li>योगसूत्र,</li>
+                <li>अथातो भक्ति जज्ञासा</li>
+                <li>शिव स्वरोदय(रुद्र यामल)</li>
+                <li>तंत्र ग्रंथ</li>
+                <li>विवेक चूड़ामणि</li>
+                <li>त्रिपुरा रहस्य</li>
+                <li>अगस्त्य संहिता</li>
+                <li>श्रीविद्यारत्नाकरः</li>
+                <li>तंत्रोक्त देव पूजा रहस्य</li>
+                <li>विज्ञान भैरव तंत्र</li>
+                <li>श्री षोडशी तन्त्र शास्त्र</li>
+                <li>सिद्ध-सिद्धान्त पद्धतिः-गोरखनाथ</li>
+                <li>श्री नाथ सिद्धों की ॐकार सिध्दि</li>
+                <li>तत्त्वबोध</li>
+                <li>विवेकचूडामणि</li>
+                <li>जहं जहं चरन परे गौतम के</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Page Flip Controls moved to bottom -->
+    <div class="controls">
+        <button id="btn-prev" class="nav-btn" onclick="prevPage()">&#8592; पिछला पृष्ठ</button>
+        <select id="page-jump" class="nav-select" onchange="jumpToPage()" aria-label="Jump to page"></select>
+        <button id="btn-next" class="nav-btn" onclick="nextPage()">अगला पृष्ठ &#8594;</button>
+    </div>
+
+    <script>
+        // Page Navigation Logic
+        let currentPage = 1;
+        const totalPages = 10;
+
+        function initBook() {
+            const select = document.getElementById('page-jump');
+            for (let i = 1; i <= totalPages; i++) {
+                let option = document.createElement('option');
+                option.value = i;
+                option.innerHTML = "पृष्ठ " + i;
+                select.appendChild(option);
+            }
+            updateView();
+        }
+
+        function updateView() {
+            for (let i = 1; i <= totalPages; i++) {
+                let page = document.getElementById('page-' + i);
+                if (i < currentPage) {
+                    page.className = 'page flipped';
+                } else if (i === currentPage) {
+                    page.className = 'page active';
+                } else {
+                    page.className = 'page upcoming';
+                }
+            }
+            
+            document.getElementById('page-jump').value = currentPage;
+            document.getElementById('btn-prev').disabled = (currentPage === 1);
+            document.getElementById('btn-next').disabled = (currentPage === totalPages);
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateView();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateView();
+            }
+        }
+
+        function jumpToPage() {
+            let selected = parseInt(document.getElementById('page-jump').value);
+            if (selected >= 1 && selected <= totalPages) {
+                currentPage = selected;
+                updateView();
+            }
+        }
+
+        // Settings Logic (Text Size & Theme)
+        let currentFontSize = 16;
+        function changeFontSize(step) {
+            currentFontSize += (step * 2); // Increase/decrease by 2px steps
+            if (currentFontSize < 12) currentFontSize = 12; // Minimum size
+            if (currentFontSize > 28) currentFontSize = 28; // Maximum size
+            document.documentElement.style.setProperty('--base-font-size', currentFontSize + 'px');
+        }
+
+        function setTheme(theme) {
+            const root = document.documentElement;
+            if(theme === 'sepia') {
+                // Warm, sepia tone
+                root.style.setProperty('--bg-color', '#e6dfcc');
+                root.style.setProperty('--page-bg', '#f4ecd8');
+                root.style.setProperty('--text-color', '#433422');
+            } else if (theme === 'mint') {
+                // Soft, greenish-mint tone
+                root.style.setProperty('--bg-color', '#dceee6');
+                root.style.setProperty('--page-bg', '#eaf4f0');
+                root.style.setProperty('--text-color', '#2f4f4f');
+            } else if (theme === 'dark') {
+                // Night/Dark mode
+                root.style.setProperty('--bg-color', '#1a1a24');
+                root.style.setProperty('--page-bg', '#2b2b36');
+                root.style.setProperty('--text-color', '#e0e0e0');
+            } else {
+                // Default Light mode
+                root.style.setProperty('--bg-color', '#f5f5f6');
+                root.style.setProperty('--page-bg', '#ffffff');
+                root.style.setProperty('--text-color', '#333333');
+            }
+        }
+
+        // Initialize the book on load
+        window.onload = initBook;
+    </script>
+</body>
+</html>
