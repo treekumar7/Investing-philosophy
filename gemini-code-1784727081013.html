@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>The Compounding Notebook</title>
+  <style>
+    :root {
+      /* Typography & Accessibility Defaults */
+      --font-size: 15px;
+      --text-color: #2c3e50;
+      --bg-color: #f4f1ea;
+      --paper-color: #fdfbf7;
+      --font-family: 'Georgia', serif;
+      --book-scale: 1; /* New variable for zooming */
+      
+      /* UI Colors */
+      --primary: #2c3e50;
+      --accent: #d35400;
+      --border: #e0dcd3;
+      --line-color: #a3c2c255;
+      --sidebar-bg: #1a252f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      font-family: var(--font-family);
+      font-size: var(--font-size);
+      color: var(--text-color);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 60px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 20px;
+      position: fixed;
+      height: 100vh;
+      z-index: 200;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      margin-bottom: 25px;
+      transition: transform 0.2s;
+    }
+
+    .toggle-btn:hover {
+      transform: scale(1.1);
+    }
+
+    /* Slide-out Panels */
+    .side-panel {
+      position: fixed;
+      top: 20px;
+      left: 80px;
+      background: #ffffff;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      z-index: 100;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 0.9rem;
+      color: #333;
+      border: 1px solid #ddd;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform-origin: left top;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .settings-panel { width: 280px; }
+    .calc-panel { width: 360px; }
+
+    .side-panel.hidden {
+      transform: scale(0.9) translateX(-20px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .side-panel h3 {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .close-panel {
+      cursor: pointer;
+      color: #888;
+      font-size: 1.2rem;
+      border: none;
+      background: none;
+    }
+
+    .close-panel:hover { color: var(--accent); }
+
+    .setting-group {
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .setting-group label { font-weight: 600; }
+
+    .setting-group select, .setting-group input[type="color"] {
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    .setting-group input[type="range"] { width: 100%; }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .btn:hover { background: #1a252f; }
+    .btn-secondary { background: #eee; color: #333; }
+    .btn-secondary:hover { background: #ddd; }
+
+    /* Calculator Specific UI */
+    .calc-section {
+      background: var(--paper-color);
+      border: 1px solid var(--border);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    .calc-section h4 {
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 1em;
+      border-bottom: 1px dashed #ccc;
+      padding-bottom: 5px;
+    }
+    .form-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      align-items: center;
+    }
+    .form-group label { font-size: 0.8em; font-weight: 600; }
+    .form-group input {
+      padding: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      width: 100%;
+    }
+    .result-box {
+      margin-top: 10px;
+      padding: 8px;
+      background: var(--primary);
+      color: white;
+      border-radius: 4px;
+      font-size: 0.9em;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    /* Notebook Layout */
+    .notebook-container {
+      margin-left: 60px;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow: auto; /* Allows panning if book is scaled up or on small screens */
+    }
+
+    .notebook-wrapper {
+      position: relative;
+      width: 90vw;
+      max-width: 1200px;
+      min-width: 800px; /* Prevents squashing on mobile */
+      height: 85vh;
+      min-height: 550px;
+      perspective: 2500px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transform: scale(var(--book-scale));
+      transform-origin: center center;
+      transition: transform 0.2s ease-out;
+    }
+
+    .book {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+    }
+
+    .leaf {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 100%;
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1);
+      cursor: default; 
+    }
+
+    .leaf.flipped {
+      transform: rotateY(-180deg);
+    }
+
+    .page {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: var(--paper-color);
+      backface-visibility: hidden;
+      border-radius: 2px 10px 10px 2px;
+      overflow: hidden; 
+      background-image: repeating-linear-gradient(transparent, transparent 1.95rem, var(--line-color) 2rem);
+      background-attachment: local;
+    }
+
+    .page-front {
+      border-right: 1px solid #ccc;
+      box-shadow: 5px 5px 15px rgba(0,0,0,0.1), inset 5px 0 20px rgba(0,0,0,0.05);
+    }
+
+    .page-back {
+      transform: rotateY(180deg);
+      border-left: 1px solid #ccc;
+      border-radius: 10px 2px 2px 10px;
+      box-shadow: -5px 5px 15px rgba(0,0,0,0.1), inset -5px 0 20px rgba(0,0,0,0.05);
+    }
+
+    /* Scrollable Inner Content */
+    .page-content {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      padding: 2.5rem 4.5rem;
+      overflow-y: auto;
+    }
+
+    /* Edge Flip Zones */
+    .flip-zone {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 60px;
+      z-index: 50;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      opacity: 0.1;
+    }
+    
+    .fz-right {
+      right: 0;
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 10px;
+      background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, transparent 100%);
+    }
+    
+    .fz-left {
+      left: 0;
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
+      background: linear-gradient(to right, rgba(0,0,0,0.6) 0%, transparent 100%);
+    }
+
+    .flip-zone:hover {
+      opacity: 0.4;
+      width: 80px;
+    }
+
+    /* Fixed Page Number */
+    .page-number {
+      position: absolute;
+      bottom: 15px;
+      font-size: 0.85em;
+      color: #888;
+      background: var(--paper-color);
+      z-index: 10;
+      padding: 0 5px;
+    }
+    
+    .page-front .page-number { right: 30px; }
+    .page-back .page-number { left: 30px; }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+      font-family: var(--font-family);
+      color: var(--primary);
+      margin-bottom: 1rem;
+      line-height: 1.2;
+      background: var(--paper-color);
+      display: inline-block;
+      padding-right: 10px;
+    }
+
+    h1 { font-size: 2.2em; border-bottom: 3px solid var(--accent); }
+    h2 { font-size: 1.6em; border-bottom: 2px solid var(--accent); margin-top: 1rem; }
+    h3 { font-size: 1.1em; color: var(--accent); margin-top: 1rem; }
+    h4 { font-size: 1em; margin-bottom: 0.5rem; color: var(--primary); }
+
+    p, ul, ol { margin-bottom: 1rem; line-height: 2rem; }
+    ul, ol { padding-left: 1.5rem; }
+    ul li { margin-bottom: 0.5rem; }
+    
+    a { color: var(--accent); text-decoration: none; font-weight: bold; cursor: pointer; }
+    a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+      background: rgba(255,255,255,0.6);
+      font-size: 0.9em;
+      line-height: 1.5rem;
+    }
+    th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+    th { background-color: var(--primary); color: white; font-weight: normal; }
+
+    .toc-list { list-style: none; padding: 0; }
+    .toc-list li {
+      margin-bottom: 0.5rem;
+      border-bottom: 1px dashed #ccc;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .cover {
+      background-color: var(--primary) !important;
+      color: white;
+      background-image: none !important;
+    }
+    .cover-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      height: 100%;
+    }
+    .cover h1 { color: white; background: transparent; border-color: white; }
+
+    /* Custom Scrollbars */
+    .page-content::-webkit-scrollbar, .side-panel::-webkit-scrollbar { width: 5px; }
+    .page-content::-webkit-scrollbar-track, .side-panel::-webkit-scrollbar-track { background: transparent; }
+    .page-content::-webkit-scrollbar-thumb, .side-panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+  </style>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <button class="toggle-btn" onclick="jumpToPage(0)" title="Cover">📖</button>
+    <button class="toggle-btn" onclick="togglePanel('settingsPanel')" title="Reading Settings">⚙️</button>
+    <button class="toggle-btn" onclick="togglePanel('calcPanel')" title="Financial Calculators">🧮</button>
+  </div>
+
+  <!-- Settings Panel -->
+  <aside class="side-panel settings-panel hidden" id="settingsPanel">
+    <h3>Notebook Settings <button class="close-panel" onclick="togglePanel('settingsPanel')">✖</button></h3>
+    
+    <div class="setting-group">
+      <label for="jumpTo">Jump to Section:</label>
+      <select id="jumpTo" onchange="jumpToPage(this.value)">
+        <option value="0">Cover</option>
+        <option value="1">Index (TOC)</option>
+        <option value="2">Scorecard (Part 1)</option>
+        <option value="3">Scorecard (Part 2)</option>
+        <option value="4">Final Framework</option>
+        <option value="5">Grades & Enhancements</option>
+        <option value="6">ROE vs ROCE (Part 1)</option>
+        <option value="7">ROE vs ROCE Matrix (Part 2)</option>
+        <option value="8">Balance Sheet Red Flags</option>
+        <option value="9">Cash Flow (CFO) Analysis</option>
+        <option value="10">Stock Fundamentals</option>
+        <option value="11">DuPont Analysis (ROE)</option>
+        <option value="12">Mental Models I</option>
+        <option value="13">Mental Models II</option>
+        <option value="14">Investing Books I</option>
+        <option value="15">Investing Books II</option>
+        <option value="16">Video Resources</option>
+      </select>
+    </div>
+    <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
+    
+    <!-- NEW: Book Scale/Zoom Control -->
+    <div class="setting-group">
+      <label for="bookScale">Book Size (Zoom for Mobile):</label>
+      <input type="range" id="bookScale" min="0.4" max="1.5" step="0.05" value="1">
+    </div>
+
+    <div class="setting-group">
+      <label for="fontSize">Text Size:</label>
+      <input type="range" id="fontSize" min="12" max="22" value="15">
+    </div>
+    <div class="setting-group">
+      <label for="fontFamily">Typography:</label>
+      <select id="fontFamily">
+        <option value="'Georgia', serif">Serif (Georgia)</option>
+        <option value="'Helvetica Neue', sans-serif">Sans-serif (Helvetica)</option>
+        <option value="'Courier New', monospace">Monospace (Courier)</option>
+      </select>
+    </div>
+    <div class="setting-group"><label for="textColor">Text Color:</label><input type="color" id="textColor" value="#2c3e50"></div>
+    <div class="setting-group"><label for="bgColor">Desk Background:</label><input type="color" id="bgColor" value="#f4f1ea"></div>
+    <button class="btn btn-secondary" onclick="resetSettings()">Reset Preferences</button>
+  </aside>
+
+  <!-- Calculators Panel -->
+  <aside class="side-panel calc-panel hidden" id="calcPanel">
+    <h3>Calculators (INR) <button class="close-panel" onclick="togglePanel('calcPanel')">✖</button></h3>
+    
+    <div class="calc-section">
+      <h4>2-Stage DCF Valuation</h4>
+      <p style="font-size: 0.75em; color: #666; line-height: 1.2; margin-bottom: 10px;">Calculates Enterprise Value, adjusts for Net Debt, and outputs Intrinsic Value per share.</p>
+      <div class="form-group"><label>Current FCF (TTM):</label><input type="number" id="dcf-fcf" value="500000000"></div>
+      <div class="form-group"><label>Gr. Rate (Yr 1-5) %:</label><input type="number" id="dcf-g5" value="15"></div>
+      <div class="form-group"><label>Discount Rate %:</label><input type="number" id="dcf-wacc" value="12"></div>
+      <div class="form-group"><label>Terminal Gr. %:</label><input type="number" id="dcf-tg" value="4"></div>
+      <div class="form-group"><label>Total Cash:</label><input type="number" id="dcf-cash" value="100000000"></div>
+      <div class="form-group"><label>Total Debt:</label><input type="number" id="dcf-debt" value="200000000"></div>
+      <div class="form-group"><label>Shares Out.:</label><input type="number" id="dcf-shares" value="50000000"></div>
+      <button class="btn" onclick="calcDCF()">Calculate Value per Share</button>
+      <div class="result-box" id="dcf-result">Value: ₹0.00</div>
+    </div>
+
+    <div class="calc-section">
+      <h4>Comprehensive Reverse DCF</h4>
+      <p style="font-size: 0.75em; color: #666; line-height: 1.2; margin-bottom: 10px;">Finds the implied 5-year growth rate currently priced into the stock.</p>
+      <div class="form-group"><label>Current Share Price:</label><input type="number" id="rdcf-price" value="250"></div>
+      <div class="form-group"><label>Shares Out.:</label><input type="number" id="rdcf-shares" value="50000000"></div>
+      <div class="form-group"><label>Net Debt (Debt-Cash):</label><input type="number" id="rdcf-netdebt" value="100000000"></div>
+      <div class="form-group"><label>Current FCF (TTM):</label><input type="number" id="rdcf-fcf" value="500000000"></div>
+      <div class="form-group"><label>Discount Rate %:</label><input type="number" id="rdcf-wacc" value="12"></div>
+      <div class="form-group"><label>Terminal Gr. %:</label><input type="number" id="rdcf-tg" value="4"></div>
+      <button class="btn" onclick="calcRevDCF()">Calculate Implied Growth</button>
+      <div class="result-box" id="rdcf-result">Implied 5Yr Growth: 0.00%</div>
+    </div>
+
+    <div class="calc-section">
+      <h4>Loan & EMI Calculator</h4>
+      <div class="form-group"><label>Principal:</label><input type="number" id="loan-p" value="5000000"></div>
+      <div class="form-group"><label>Interest (%):</label><input type="number" id="loan-r" value="8.5"></div>
+      <div class="form-group"><label>Tenure (Yrs):</label><input type="number" id="loan-y" value="15"></div>
+      <button class="btn" onclick="calcLoan()">Calculate EMI</button>
+      <div class="result-box" id="loan-result">Monthly EMI: ₹0.00</div>
+    </div>
+
+    <div class="calc-section">
+      <h4>SIP Calculator</h4>
+      <div class="form-group"><label>Monthly Inv:</label><input type="number" id="sip-p" value="10000"></div>
+      <div class="form-group"><label>Exp. Return (%):</label><input type="number" id="sip-r" value="12"></div>
+      <div class="form-group"><label>Time (Yrs):</label><input type="number" id="sip-y" value="20"></div>
+      <button class="btn" onclick="calcSIP()">Calculate Future Val</button>
+      <div class="result-box" id="sip-result">Future Value: ₹0.00</div>
+    </div>
+  </aside>
+
+  <!-- 3D Notebook -->
+  <div class="notebook-container">
+    <div class="notebook-wrapper">
+      <div class="book" id="book">
+        
+        <!-- Leaf 0: Cover & TOC -->
+        <div class="leaf" id="leaf-0">
+          <div class="page page-front cover">
+            <div class="cover-content">
+              <h1>The Compounding<br>Notebook</h1>
+              <p style="margin-top: 2rem; font-style: italic; color: white;">Frameworks, Financials & Valuation</p>
+              <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.8; color: white;">Click the right edge to turn pages.</p>
+            </div>
+            <div class="page-number" style="background: transparent; color: rgba(255,255,255,0.7);">Cover</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>Table of Contents</h2>
+              <ul class="toc-list">
+                <li><a onclick="jumpToPage(2)">Scorecard (Part 1)</a> <span>Pg. 2</span></li>
+                <li><a onclick="jumpToPage(3)">Scorecard (Part 2)</a> <span>Pg. 3</span></li>
+                <li><a onclick="jumpToPage(4)">Final Framework</a> <span>Pg. 4</span></li>
+                <li><a onclick="jumpToPage(5)">Grades & Enhancements</a> <span>Pg. 5</span></li>
+                <li><a onclick="jumpToPage(6)">ROE vs ROCE Dynamics</a> <span>Pg. 6</span></li>
+                <li><a onclick="jumpToPage(7)">ROE vs ROCE Matrix</a> <span>Pg. 7</span></li>
+                <li><a onclick="jumpToPage(8)">Balance Sheet Red Flags</a> <span>Pg. 8</span></li>
+                <li><a onclick="jumpToPage(9)">Cash Flow (CFO) Analysis</a> <span>Pg. 9</span></li>
+                <li><a onclick="jumpToPage(10)">Stock Fundamentals</a> <span>Pg. 10</span></li>
+                <li><a onclick="jumpToPage(11)">DuPont Analysis (ROE)</a> <span>Pg. 11</span></li>
+                <li><a onclick="jumpToPage(12)">Mental Models I</a> <span>Pg. 12</span></li>
+                <li><a onclick="jumpToPage(13)">Mental Models II</a> <span>Pg. 13</span></li>
+                <li><a onclick="jumpToPage(14)">Investing Books I</a> <span>Pg. 14</span></li>
+                <li><a onclick="jumpToPage(15)">Investing Books II</a> <span>Pg. 15</span></li>
+                <li><a onclick="jumpToPage(16)">Video Resources</a> <span>Pg. 16</span></li>
+              </ul>
+              <p style="font-size: 0.85em; font-style: italic; color: #666; margin-top: 20px;">Note: DCF Models and Zoom options are accessible via the sidebar.</p>
+            </div>
+            <div class="page-number">Page 1</div>
+          </div>
+        </div>
+
+        <!-- Leaf 1: Scorecard Part 1 & Part 2 -->
+        <div class="leaf" id="leaf-1">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>Institutional Scorecard (Part 1)</h2>
+              <p>Institutional Investment Scorecard (100 Points)[cite: 4]:</p>
+              
+              <table>
+                <tr><th>Factor</th><th>Weight</th></tr>
+                <tr><td>Business Quality & Moat</td><td>20</td></tr>
+                <tr><td>Porter Five Forces</td><td>10</td></tr>
+                <tr><td>Management & Capital Allocation</td><td>10</td></tr>
+                <tr><td>Financial Strength</td><td>15</td></tr>
+                <tr><td>Growth Potential</td><td>15</td></tr>
+                <tr><td>Valuation</td><td>10</td></tr>
+                <tr><td>Industry Outlook</td><td>10</td></tr>
+                <tr><td>Risk Assessment</td><td>10</td></tr>
+                <tr><th>Total</th><th>100</th></tr>
+              </table>
+
+              <h3>1. Business Quality (20)</h3>
+              <p>Evaluate: Brand strength, Pricing power, Switching costs, Network effects, Cost advantage, Distribution, Technology leadership[cite: 4].</p>
+              
+              <h3>2. Porter Five Forces (10)</h3>
+              <p>Assess: Entry barriers, Supplier power, Buyer power, Substitutes, Rivalry[cite: 4].</p>
+
+              <h3>3. Management Quality (10)</h3>
+              <p>Look at: Capital allocation, Governance, Promoter integrity, Communication, Acquisition discipline, Execution, Skin in the game[cite: 4].</p>
+
+              <h3>4. Financial Strength (15)</h3>
+              <p>Metrics: ROE, ROCE, Free cash flow, Debt profile, Interest coverage, Cash conversion, Working capital[cite: 4].</p>
+            </div>
+            <div class="page-number">Page 2</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>Institutional Scorecard (Part 2)</h2>
+              
+              <h3>5. Growth Potential (15)</h3>
+              <p>Evaluate: Revenue CAGR, Profit CAGR, Addressable market, Capacity expansion, Export opportunities, New products, Order book[cite: 4].</p>
+
+              <h3>6. Valuation (10)</h3>
+              <p>Consider: PE, EV/EBITDA, PEG, Price-to-Book, Discounted Cash Flow (DCF), Relative valuation[cite: 4].</p>
+
+              <h3>7. Industry Outlook (10)</h3>
+              <p>Questions: Is the industry growing? Government support? Technology disruption? Long-term demand? Competitive intensity?[cite: 4].</p>
+
+              <h3>8. Risk Assessment (10)</h3>
+              <p>Review: Customer concentration, Regulatory risk, Execution risk, Commodity risk, Currency risk, Governance risk, Valuation risk[cite: 4].</p>
+              
+              <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
+              
+              <h4>Next step</h4>
+              <p>This framework is a starting point, not a substitute for current financial analysis[cite: 4]. The scores above are qualitative preliminary assessments based on business quality and industry characteristics—they are not based on the latest financial statements, valuation multiples, or analyst estimates[cite: 4].</p>
+              <p>As we continue the institutional report, I would refine each company's score using current financial data, capital allocation, valuation, and management commentary, so the final ranking reflects both business quality and up-to-date fundamentals rather than qualitative assessment alone[cite: 4].</p>
+            </div>
+            <div class="page-number">Page 3</div>
+          </div>
+        </div>
+
+        <!-- Leaf 2: Final Framework & Enhancements -->
+        <div class="leaf" id="leaf-2">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>Final Framework (Institutional)</h2>
+              <p>Excellent. From now on, I'll build this like a buy-side institutional research report, not just a stock summary[cite: 4]. Each company will receive a 100-point score across 20 categories[cite: 4].</p>
+              
+              <table>
+                <tr><th>Factor</th><th>Weight</th></tr>
+                <tr><td>Industry Structure (Porter Five Forces)</td><td>10</td></tr>
+                <tr><td>Economic Moat</td><td>10</td></tr>
+                <tr><td>Management Quality</td><td>10</td></tr>
+                <tr><td>Capital Allocation</td><td>5</td></tr>
+                <tr><td>Corporate Governance</td><td>5</td></tr>
+                <tr><td>Revenue Growth</td><td>5</td></tr>
+                <tr><td>Earnings Growth</td><td>5</td></tr>
+                <tr><td>ROE</td><td>5</td></tr>
+                <tr><td>ROCE</td><td>5</td></tr>
+                <tr><td>Free Cash Flow</td><td>5</td></tr>
+                <tr><td>Balance Sheet</td><td>5</td></tr>
+                <tr><td>Order Book / Business Visibility</td><td>5</td></tr>
+                <tr><td>Competitive Position</td><td>5</td></tr>
+                <tr><td>Industry Tailwinds</td><td>5</td></tr>
+                <tr><td>Valuation</td><td>5</td></tr>
+                <tr><td>Risk Profile</td><td>5</td></tr>
+                <tr><td>Innovation / Technology</td><td>3</td></tr>
+                <tr><td>ESG / Sustainability</td><td>2</td></tr>
+                <tr><td>Promoter Alignment</td><td>3</td></tr>
+                <tr><td>Long-Term Optionality</td><td>2</td></tr>
+                <tr><th>Total</th><th>100</th></tr>
+              </table>
+            </div>
+            <div class="page-number">Page 4</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>Investment Grades</h2>
+              
+              <table>
+                <tr><th>Score</th><th>Rating</th></tr>
+                <tr><td>95–100</td><td>⭐⭐⭐⭐⭐ Elite Compounder[cite: 4]</td></tr>
+                <tr><td>90–94</td><td>⭐⭐⭐⭐⭐ Strong Buy[cite: 4]</td></tr>
+                <tr><td>85–89</td><td>⭐⭐⭐⭐ Buy[cite: 4]</td></tr>
+                <tr><td>80–84</td><td>⭐⭐⭐ Hold[cite: 4]</td></tr>
+                <tr><td>70–79</td><td>⭐⭐ Watchlist[cite: 4]</td></tr>
+                <tr><td><70</td><td>⭐ Avoid[cite: 4]</td></tr>
+              </table>
+
+              <h2>Additional Enhancements</h2>
+              <p>To make the report closer to what an institutional fund would use, I'll also include[cite: 4]:</p>
+              <ul>
+                <li>Management Quality Score (based on capital allocation, governance, communication, and execution)[cite: 4]</li>
+                <li>Capital Allocation Score (reinvestment, dividends, acquisitions, debt management)[cite: 4]</li>
+                <li>Business Quality Matrix (High Quality / Medium Quality / Low Quality)[cite: 4]</li>
+                <li>Lifecycle Classification (Emerging, Growth, Compounder, Mature, Turnaround)[cite: 4]</li>
+                <li>Key Investment Triggers (events that could materially improve the investment case)[cite: 4]</li>
+                <li>Red Flags (issues that could change the thesis)[cite: 4]</li>
+                <li>Quarterly Monitoring Checklist (KPIs to track after every result)[cite: 4]</li>
+                <li>3–5 Year Scenario Analysis (Bull, Base, Bear)[cite: 4]</li>
+                <li>Portfolio Role (Core Compounder, Growth, Cyclical, Special Situation, Watchlist)[cite: 4]</li>
+              </ul>
+              
+              <p><strong>One important caveat:</strong> the ranking above is preliminary and qualitative[cite: 4]. To make it suitable for investment decisions, I would update each score using current financial statements, valuation metrics, and management guidance before treating it as a final conviction ranking[cite: 4].</p>
+            </div>
+            <div class="page-number">Page 5</div>
+          </div>
+        </div>
+
+        <!-- Leaf 3: ROE vs ROCE Relationship (Part 1 & 2) -->
+        <div class="leaf" id="leaf-3">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>ROE & ROCE Relationship (Part 1)</h2>
+              <p>Understanding the structural relationship between <strong>Return on Equity (ROE)</strong> and <strong>Return on Capital Employed (ROCE)</strong> is vital for evaluating core business profitability vs financial leverage.</p>
+
+              <h3>Core Definitions</h3>
+              <p>$$\text{ROE} = \frac{\text{Net Income}}{\text{Shareholders' Equity}}$$</p>
+              <p>$$\text{ROCE} = \frac{\text{EBIT}}{\text{Capital Employed}} = \frac{\text{EBIT}}{\text{Equity} + \text{Total Debt} - \text{Non-Operating Assets}}$$</p>
+
+              <h3>1. The Financial Leverage Bridge</h3>
+              <p>ROCE measures how efficiently a business generates operating profit ($\text{EBIT}$) from <em>all</em> capital invested (debt + equity). ROE measures what is left over for equity holders after paying interest and taxes.</p>
+              
+              <p>The relationship can be defined mathematically as:</p>
+              <p>$$\text{ROE} \approx \left[ \text{ROCE} + \left( \text{ROCE} - \text{Cost of Debt} \right) \times \frac{\text{Debt}}{\text{Equity}} \right] \times (1 - \text{Tax Rate})$$</p>
+
+              <ul>
+                <li><strong>Positive Financial Leverage ($\text{ROCE} > \text{Cost of Debt}$):</strong> Adding debt increases ROE above ROCE. The company borrows cheaply and invests at higher returns.</li>
+                <li><strong>Negative Financial Leverage ($\text{ROCE} < \text{Cost of Debt}$):</strong> High debt burdens drag ROE far below ROCE, creating financial distress.</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 6</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>ROE & ROCE Relationship (Part 2)</h2>
+              
+              <h3>2. The 4-Quadrant Diagnostic Matrix</h3>
+              <table>
+                <tr>
+                  <th>Combination</th>
+                  <th>Diagnosis & Institutional Meaning</th>
+                </tr>
+                <tr>
+                  <td><strong>High ROCE / High ROE</strong></td>
+                  <td><strong>Elite Compounder:</strong> High business quality, moat, clean balance sheet. Generates organic growth without excessive debt.</td>
+                </tr>
+                <tr>
+                  <td><strong>Low ROCE / High ROE</strong></td>
+                  <td><strong>Financial Engineering Red Flag:</strong> Weak underlying operations masked by heavy debt or optical equity reductions (buybacks/losses). High risk!</td>
+                </tr>
+                <tr>
+                  <td><strong>High ROCE / Low ROE</strong></td>
+                  <td><strong>Cash Hoard / Tax Drag:</strong> High operating performance suppressed by massive idle cash on the balance sheet or expensive tax regimes.</td>
+                </tr>
+                <tr>
+                  <td><strong>Low ROCE / Low ROE</strong></td>
+                  <td><strong>Capital Destroyer:</strong> Poor pricing power, weak asset utilization, and value destruction across all capital suppliers.</td>
+                </tr>
+              </table>
+
+              <h3>3. Working Capital & Trade Payables Impact</h3>
+              <p>In asset-light platforms or retail models (e.g., FMCG, market infra), negative working capital (high trade payables) reduces $\text{Capital Employed}$, resulting in <strong>astronomical ROCE</strong> figures. In zero-debt firms, ROE and ROCE track almost identically post-tax.</p>
+            </div>
+            <div class="page-number">Page 7</div>
+          </div>
+        </div>
+
+        <!-- Leaf 4: Balance Sheet & CFO -->
+        <div class="leaf" id="leaf-4">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>Balance Sheet Analysis</h2>
+              <p><strong>Q: If company receivables increase, is it a red flag?</strong></p>
+              <p>An increase in accounts receivable (AR) can be a red flag, but it depends on the context[cite: 2]:</p>
+              <ul>
+                <li><strong>Potential Red Flags:</strong> Strained cash flow (struggling to collect payments), aggressive revenue recognition to inflate profits, or deteriorating credit quality by extending credit to less creditworthy customers[cite: 2].</li>
+                <li><strong>Not Necessarily a Red Flag:</strong> Normal business growth (especially B2B), seasonal sales patterns, or strategic improvement in payment terms to attract customers[cite: 2].</li>
+              </ul>
+              <h3>Key Metrics to Analyze</h3>
+              <ul>
+                <li><strong>Days Sales Outstanding (DSO):</strong> Increasing DSO indicates slower collections[cite: 2].</li>
+                <li><strong>AR Turnover Ratio:</strong> Declining ratio means less efficiency in collections[cite: 2].</li>
+                <li><strong>Bad Debt Expense:</strong> Rising expenses indicate collectability issues[cite: 2].</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 8</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>Cash from Operating Activity</h2>
+              <p>CFO shows how much cash a company generates from its core business operations[cite: 2].</p>
+              <h3>Formula</h3>
+              <p>$$\text{CFO} = \text{Net Income} + \text{Non-Cash Exp.} \pm \Delta \text{Working Capital}$$</p>
+              
+              <h3>Red Flags in CFO</h3>
+              <ul>
+                <li><strong>Negative Cash Flow:</strong> Poor profitability or inefficient operations[cite: 2].</li>
+                <li><strong>Discrepancy with Net Income:</strong> Aggressive revenue recognition (booking sales before cash is collected)[cite: 2].</li>
+                <li><strong>Increasing AR:</strong> Customers delaying payments[cite: 2].</li>
+                <li><strong>Rising Inventory:</strong> Overproduction or difficulty selling products[cite: 2].</li>
+                <li><strong>Declining Accounts Payable:</strong> Paying suppliers too quickly, straining cash flow[cite: 2].</li>
+                <li><strong>Volatile CFO:</strong> Unstable revenue streams or poor working capital management[cite: 2].</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 9</div>
+          </div>
+        </div>
+
+        <!-- Leaf 5: Fundamentals & DuPont Analysis -->
+        <div class="leaf" id="leaf-5">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>Stock Market Fundamentals</h2>
+              <p>Understanding the Indian market differs from the US market[cite: 3].</p>
+              <ul>
+                <li><strong>Company Lifecycle:</strong> Nascent, growth, sustainability/maturity, decline[cite: 3]. In the growth phase, positive cash flow is less critical, but later, margins, ROE, ROCE, and cash conversion matter[cite: 3].</li>
+                <li><strong>Market Cycles:</strong> In bear markets, look for sustainability; in bull markets, people buy growth at any price[cite: 3].</li>
+                <li><strong>Philosophy:</strong> It is all about managing risk-to-reward[cite: 3]. Charlie Munger likens poor risk management to "picking up pennies in front of a road roller"[cite: 3].</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 10</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>DuPont Analysis (Growth vs ROE)</h2>
+              <p>A company growing top-line at 40% with a 10% ROE can see its ROE structurally increase as operating leverage kicks in[cite: 3].</p>
+              
+              <h3>Sustainable Growth Rate</h3>
+              <p>$$\text{SGR} = \text{ROE} \times (1 - \text{Payout Ratio})$$</p>
+              
+              <h3>DuPont Equation</h3>
+              <p>$$\text{ROE} = \text{Net Profit Margin} \times \text{Asset Turnover} \times \text{Equity Multiplier}$$</p>
+              
+              <ul>
+                <li><strong>Operating Leverage:</strong> As revenue scales over a fixed cost base, net profit margins expand, pulling ROE upward[cite: 3].</li>
+                <li><strong>Asset Efficiency:</strong> As capacity utilization improves, Asset Turnover spikes[cite: 3].</li>
+                <li><strong>Capital Structure:</strong> Funding growth through debt increases the Equity Multiplier, magnifying equity returns but adding risk[cite: 3].</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 11</div>
+          </div>
+        </div>
+
+        <!-- Leaf 6: Mental Models -->
+        <div class="leaf" id="leaf-6">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>Mental Models & Philosophy (I)</h2>
+              <p>Investing is ultimately about managing risk (risk to reward ratio)[cite: 3]. Core frameworks help improve rational decision-making.</p>
+              <ul>
+                <li><strong>Opportunity Cost:</strong> By choosing one investment or action, you forfeit the benefits of the alternatives. Every choice has a hidden cost, and capital deployment must always be measured against the next best alternative.</li>
+                <li><strong>Business Longevity:</strong> Apply Porter's Five Forces and evaluate business models (philosophies of Warren-Munger, Peter Lynch, Aswath Damodaran, Fisher, Peter Thiel) to understand which businesses sustain and which collapse[cite: 3].</li>
+                <li><strong>Circle of Competence:</strong> Identify the boundaries of your understanding. The size of your circle isn't as important as knowing exactly where the perimeter is.</li>
+                <li><strong>Inversion:</strong> "Tell me where I'm going to die, so I'll never go there." Approach problems backwards to avoid failure rather than just seeking brilliance.</li>
+                <li><strong>Margin of Safety:</strong> Always build a buffer. If you think a bridge needs to hold 10 tons, build it to hold 30 tons.</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 12</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>Mental Models & Philosophy (II)</h2>
+              
+              <h3>Process vs. Outcome</h3>
+              <p>Michael Mauboussin highlights that in probabilistic fields like investing, you must evaluate the <em>process</em>, not just the isolated <em>outcome</em>.</p>
+              <table style="font-size: 0.85em; text-align: center; background: rgba(255,255,255,0.8);">
+                <tr>
+                  <th style="background: transparent;"></th>
+                  <th>Good Outcome</th>
+                  <th>Bad Outcome</th>
+                </tr>
+                <tr>
+                  <th>Good Process</th>
+                  <td><strong>Earned Success</strong><br><span style="font-size:0.9em; font-weight:normal;">(Keep doing it)</span></td>
+                  <td><strong>Bad Luck</strong><br><span style="font-size:0.9em; font-weight:normal;">(Stick to the process)</span></td>
+                </tr>
+                <tr>
+                  <th>Bad Process</th>
+                  <td><strong>Dumb Luck</strong><br><span style="font-size:0.9em; font-weight:normal;">(Dangerous)</span></td>
+                  <td><strong>Poetic Justice</strong><br><span style="font-size:0.9em; font-weight:normal;">(Change process)</span></td>
+                </tr>
+              </table>
+
+              <ul>
+                <li><strong>Second-Order Thinking:</strong> First-order thinking is simplistic. Second-order asks, "It's a good company, but everyone knows it, therefore the stock is overpriced."</li>
+                <li><strong>Pareto Principle (80/20 Rule):</strong> Roughly 80% of consequences come from 20% of causes. Focus on the vital few business metrics that drive the compounding.</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 13</div>
+          </div>
+        </div>
+
+        <!-- Leaf 7: Books Part I & II -->
+        <div class="leaf" id="leaf-7">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>Investing Books (Fundamentals)</h2>
+              <p>The definitive reading list for compounding knowledge across investing and strategy:</p>
+              
+              <h3>Value & Fundamental Investing</h3>
+              <ul>
+                <li><em>The Intelligent Investor</em> by Benjamin Graham</li>
+                <li><em>Margin of Safety</em> by Seth Klarman</li>
+                <li><em>Common Stock Uncommon Profit</em> by Philip Fisher[cite: 3]</li>
+                <li><em>Capital Returns</em> by Edward Chancellor[cite: 3]</li>
+                <li><em>One Up On Wall Street</em> by Peter Lynch[cite: 3]</li>
+                <li><em>100 Baggers: Stocks That Return 100-to-1</em> by Christopher Mayer</li>
+                <li><em>Warren Buffett and the Interpretation of Financial Statements</em> by Mary Buffett & David Clark</li>
+                <li><em>Motilal Oswal Annual Wealth Creation Study</em></li>
+              </ul>
+            </div>
+            <div class="page-number">Page 14</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2>Investing Books (Psychology & Systems)</h2>
+              
+              <h3>Market Cycles & Trading</h3>
+              <ul>
+                <li><em>Stan Weinstein's Secrets For Profiting in Bull and Bear Markets</em> by Stan Weinstein</li>
+                <li><em>Trading in the Zone</em> by Mark Douglas</li>
+                <li><em>How to Make Money in Stocks</em> by William O'Neil[cite: 3]</li>
+                <li>Howard Marks' books and memos on market cycles[cite: 3]</li>
+              </ul>
+
+              <h3>Behavioral Psychology & Models</h3>
+              <ul>
+                <li><em>Principles: Life and Work</em> by Ray Dalio</li>
+                <li><em>Principles for Dealing with the Changing World Order</em> by Ray Dalio</li>
+                <li><em>Noise: A Flaw in Human Judgment</em> by Daniel Kahneman</li>
+                <li><em>The Psychology of Money</em> by Morgan Housel</li>
+                <li><em>Poor Charlie's Almanack</em> by Charles T. Munger</li>
+                <li><em>More Than You Know</em> by Michael Mauboussin[cite: 3]</li>
+                <li><em>Antifragile</em> and <em>The Black Swan</em> by Nassim Taleb[cite: 3]</li>
+                <li><em>Narrative and Numbers</em> by Aswath Damodaran[cite: 3]</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 15</div>
+          </div>
+        </div>
+
+        <!-- Leaf 8: Videos & End -->
+        <div class="leaf" id="leaf-8">
+          <div class="page page-front">
+            <div class="page-content">
+              <h2>Video & Digital Resources</h2>
+              <p>High-signal digital resources for understanding business, science, and scale:</p>
+              <ul>
+                <li><a href="#" target="_blank">Aswath Damodaran</a> - Essential for understanding corporate valuation, narrative and numbers, and the lifecycle of companies[cite: 3].</li>
+                <li><a href="#" target="_blank">Kuntal Shah (CFA Society of India)</a> - Learn the "Art of Selling Stock"[cite: 3].</li>
+                <li><a href="#" target="_blank">Y Combinator</a> - Startup philosophy, product-market fit, and the mechanics of rapid scale.</li>
+                <li><a href="#" target="_blank">Ben Felix</a> - Data-driven personal finance, portfolio management, and index fund investing.</li>
+                <li><a href="#" target="_blank">Veritasium</a> - Science, physics, and understanding the physical truth of the world around us.</li>
+              </ul>
+            </div>
+            <div class="page-number">Page 16</div>
+          </div>
+          <div class="page page-back">
+            <div class="page-content">
+              <h2 style="color: #ccc; border-bottom: 2px solid #ccc; text-align: center; margin-top: 40%;">Notes</h2>
+              <!-- Blank page for realism -->
+            </div>
+            <div class="page-number">Page 17</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =======================
+       INJECT EDGE FLIP ZONES
+    ======================= */
+    // Add clickable right edge to all front pages
+    document.querySelectorAll('.page-front').forEach(page => {
+      const rightEdge = document.createElement('div');
+      rightEdge.className = 'flip-zone fz-right';
+      rightEdge.title = 'Next Page';
+      page.appendChild(rightEdge);
+    });
+
+    // Add clickable left edge to all back pages
+    document.querySelectorAll('.page-back').forEach(page => {
+      const leftEdge = document.createElement('div');
+      leftEdge.className = 'flip-zone fz-left';
+      leftEdge.title = 'Previous Page';
+      page.appendChild(leftEdge);
+    });
+
+    /* =======================
+       PAGE FLIP LOGIC
+    ======================= */
+    const leaves = document.querySelectorAll('.leaf');
+    let currentLeafIndex = 0; 
+    
+    function updateZIndexes() {
+      leaves.forEach((leaf, index) => {
+        if (index < currentLeafIndex) {
+          leaf.style.zIndex = index;
+        } else {
+          leaf.style.zIndex = leaves.length - index;
+        }
+      });
+    }
+
+    function jumpToPage(pageNumber) {
+      const targetLeaf = Math.floor(pageNumber / 2);
+      leaves.forEach((leaf, index) => {
+        if (index < targetLeaf) {
+          leaf.classList.add('flipped');
+        } else {
+          leaf.classList.remove('flipped');
+        }
+      });
+      currentLeafIndex = targetLeaf;
+      setTimeout(updateZIndexes, 300);
+      document.getElementById('jumpTo').value = pageNumber;
+      
+      // Auto-hide panels for reading focus
+      document.getElementById('settingsPanel').classList.add('hidden');
+      document.getElementById('calcPanel').classList.add('hidden');
+    }
+
+    leaves.forEach((leaf, index) => {
+      leaf.addEventListener('click', (e) => {
+        if (e.target.classList.contains('flip-zone')) {
+          if (leaf.classList.contains('flipped')) {
+            jumpToPage(index * 2); 
+          } else {
+            jumpToPage((index + 1) * 2); 
+          }
+        }
+      });
+    });
+
+    updateZIndexes();
+
+    /* =======================
+       PANEL & SETTINGS LOGIC 
+    ======================= */
+    function togglePanel(panelId) {
+      const panels = ['settingsPanel', 'calcPanel'];
+      panels.forEach(id => {
+        const p = document.getElementById(id);
+        if (id === panelId) {
+          p.classList.toggle('hidden');
+        } else {
+          p.classList.add('hidden');
+        }
+      });
+    }
+
+    const root = document.documentElement;
+    const inputs = {
+      bookScale: document.getElementById('bookScale'),
+      fontSize: document.getElementById('fontSize'),
+      fontFamily: document.getElementById('fontFamily'),
+      textColor: document.getElementById('textColor'),
+      bgColor: document.getElementById('bgColor')
+    };
+
+    function loadSettings() {
+      if (localStorage.getItem('notebook-bookScale')) {
+        root.style.setProperty('--book-scale', localStorage.getItem('notebook-bookScale'));
+        inputs.bookScale.value = localStorage.getItem('notebook-bookScale');
+      }
+      if (localStorage.getItem('notebook-fontSize')) {
+        root.style.setProperty('--font-size', localStorage.getItem('notebook-fontSize') + 'px');
+        inputs.fontSize.value = localStorage.getItem('notebook-fontSize');
+      }
+      if (localStorage.getItem('notebook-fontFamily')) {
+        root.style.setProperty('--font-family', localStorage.getItem('notebook-fontFamily'));
+        inputs.fontFamily.value = localStorage.getItem('notebook-fontFamily');
+      }
+      if (localStorage.getItem('notebook-textColor')) {
+        root.style.setProperty('--text-color', localStorage.getItem('notebook-textColor'));
+        inputs.textColor.value = localStorage.getItem('notebook-textColor');
+      }
+      if (localStorage.getItem('notebook-bgColor')) {
+        root.style.setProperty('--bg-color', localStorage.getItem('notebook-bgColor'));
+        inputs.bgColor.value = localStorage.getItem('notebook-bgColor');
+      }
+    }
+
+    function saveSettings(key, value) {
+      localStorage.setItem(`notebook-${key}`, value);
+    }
+
+    inputs.bookScale.addEventListener('input', (e) => {
+      root.style.setProperty('--book-scale', e.target.value);
+      saveSettings('bookScale', e.target.value);
+    });
+    inputs.fontSize.addEventListener('input', (e) => {
+      root.style.setProperty('--font-size', e.target.value + 'px');
+      saveSettings('fontSize', e.target.value);
+    });
+    inputs.fontFamily.addEventListener('change', (e) => {
+      root.style.setProperty('--font-family', e.target.value);
+      saveSettings('fontFamily', e.target.value);
+    });
+    inputs.textColor.addEventListener('input', (e) => {
+      root.style.setProperty('--text-color', e.target.value);
+      saveSettings('textColor', e.target.value);
+    });
+    inputs.bgColor.addEventListener('input', (e) => {
+      root.style.setProperty('--bg-color', e.target.value);
+      saveSettings('bgColor', e.target.value);
+    });
+
+    function resetSettings() {
+      localStorage.clear();
+      root.style.setProperty('--book-scale', '1');
+      root.style.setProperty('--font-size', '15px');
+      root.style.setProperty('--font-family', "'Georgia', serif");
+      root.style.setProperty('--text-color', '#2c3e50');
+      root.style.setProperty('--bg-color', '#f4f1ea');
+      inputs.bookScale.value = 1;
+      inputs.fontSize.value = 15;
+      inputs.fontFamily.value = "'Georgia', serif";
+      inputs.textColor.value = '#2c3e50';
+      inputs.bgColor.value = '#f4f1ea';
+    }
+    loadSettings();
+
+    /* =======================
+       CALCULATORS (INR Format)
+    ======================= */
+    const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
+
+    function calcDCF() {
+      const fcf0 = parseFloat(document.getElementById('dcf-fcf').value);
+      const g5 = parseFloat(document.getElementById('dcf-g5').value) / 100;
+      const wacc = parseFloat(document.getElementById('dcf-wacc').value) / 100;
+      const tg = parseFloat(document.getElementById('dcf-tg').value) / 100;
+      const cash = parseFloat(document.getElementById('dcf-cash').value);
+      const debt = parseFloat(document.getElementById('dcf-debt').value);
+      const shares = parseFloat(document.getElementById('dcf-shares').value);
+
+      if (wacc <= tg) {
+        document.getElementById('dcf-result').innerText = "Error: WACC > Terminal Growth needed.";
+        return;
+      }
+
+      let pvFcf = 0;
+      let fcf = fcf0;
+      
+      for(let i=1; i<=5; i++){
+          fcf = fcf * (1 + g5);
+          pvFcf += fcf / Math.pow(1 + wacc, i);
+      }
+      
+      const tv = (fcf * (1 + tg)) / (wacc - tg);
+      const pvTv = tv / Math.pow(1 + wacc, 5);
+      
+      const enterpriseValue = pvFcf + pvTv;
+      const equityValue = enterpriseValue + cash - debt;
+      const valuePerShare = equityValue / shares;
+
+      document.getElementById('dcf-result').innerText = `Intrinsic Value: ${formatter.format(valuePerShare)} per share`;
+    }
+
+    function calcRevDCF() {
+      const price = parseFloat(document.getElementById('rdcf-price').value);
+      const shares = parseFloat(document.getElementById('rdcf-shares').value);
+      const netDebt = parseFloat(document.getElementById('rdcf-netdebt').value);
+      const fcf0 = parseFloat(document.getElementById('rdcf-fcf').value);
+      const wacc = parseFloat(document.getElementById('rdcf-wacc').value) / 100;
+      const tg = parseFloat(document.getElementById('rdcf-tg').value) / 100;
+
+      const equityValue = price * shares;
+      const targetEV = equityValue + netDebt;
+
+      let low = -0.99, high = 2.0, g = 0;
+      let iterations = 0;
+      
+      while(iterations < 50) {
+          g = (low + high) / 2;
+          let pvFcf = 0;
+          let fcf = fcf0;
+          
+          for(let i=1; i<=5; i++){
+              fcf = fcf * (1 + g);
+              pvFcf += fcf / Math.pow(1 + wacc, i);
+          }
+          
+          const tv = (fcf * (1 + tg)) / (wacc - tg);
+          const pvTv = tv / Math.pow(1 + wacc, 5);
+          const calculatedEV = pvFcf + pvTv;
+
+          if (calculatedEV > targetEV) {
+              high = g; 
+          } else {
+              low = g;  
+          }
+          iterations++;
+      }
+
+      document.getElementById('rdcf-result').innerText = `Implied 5Yr Growth: ${(g * 100).toFixed(2)}%`;
+    }
+
+    function calcLoan() {
+      const p = parseFloat(document.getElementById('loan-p').value);
+      const r = parseFloat(document.getElementById('loan-r').value) / 12 / 100;
+      const n = parseFloat(document.getElementById('loan-y').value) * 12;
+      const emi = p * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+      document.getElementById('loan-result').innerText = `Monthly EMI: ${formatter.format(emi)}`;
+    }
+
+    function calcSIP() {
+      const p = parseFloat(document.getElementById('sip-p').value);
+      const r = parseFloat(document.getElementById('sip-r').value) / 12 / 100;
+      const n = parseFloat(document.getElementById('sip-y').value) * 12;
+      const fv = p * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
+      document.getElementById('sip-result').innerText = `Future Value: ${formatter.format(fv)}`;
+    }
+  </script>
+</body>
+</html>
