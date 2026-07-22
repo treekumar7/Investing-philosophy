@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cover:#5b3a29;
+    --cover-dark:#432a1d;
+    --paper:#fbf6ea;
+    --paper-shadow:#e7dcc3;
+    --ink:#2b2620;
+    --line:#c9bfa0;
+    --accent:#b5402c;
+    --gold:#c8a45c;
+    --mono:'Space Mono', monospace;
+    --hand:'Caveat', cursive;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 20% 20%, #3d2e26 0%, transparent 60%),
+      radial-gradient(circle at 80% 80%, #2c221c 0%, transparent 55%),
+      #241c17;
+    color:var(--ink);
+    font-family:var(--mono);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px 12px;
+    overflow-x:hidden;
+  }
+
+  .topbar{
+    width:100%;
+    max-width:820px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+    color:var(--gold);
+    font-size:0.7rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+  }
+  .topbar .title{color:#f1e6cf; font-size:0.85rem;}
+  .topbar button{
+    background:none;
+    border:1px solid var(--gold);
+    color:var(--gold);
+    font-family:var(--mono);
+    font-size:0.65rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    padding:6px 10px;
+    cursor:pointer;
+  }
+  .topbar button:hover{ background:var(--gold); color:#241c17; }
+  #syncFile{display:none;}
+
+  /* BOOK */
+  .book-shell{
+    position:relative;
+    width:100%;
+    max-width:520px;
+    aspect-ratio: 3 / 4;
+    perspective:2200px;
+  }
+  @media(min-width:900px){
+    .book-shell{ max-width:820px; aspect-ratio: 4 / 3; }
+    .entry-title{ font-size:2.4rem; }
+    .entry-desc{ font-size:1.2rem; }
+  }
+  @media(min-width:1300px){
+    .book-shell{ max-width:1000px; }
+  }
+  .cover-back{
+    position:absolute; inset:0;
+    background:
+      linear-gradient(135deg, var(--cover) 0%, var(--cover-dark) 100%);
+    border-radius:6px 10px 10px 6px;
+    box-shadow:0 25px 50px rgba(0,0,0,0.55), inset 0 0 0 2px rgba(200,164,92,0.25);
+  }
+  .spine{
+    position:absolute; left:0; top:0; bottom:0; width:34px;
+    display:flex; flex-direction:column; align-items:center; justify-content:space-evenly;
+    z-index:5;
+  }
+  .spine i{
+    width:11px; height:11px; border-radius:50%;
+    background:#1c140f;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .pages-area{
+    position:absolute;
+    top:14px; right:12px; bottom:14px; left:40px;
+  }
+
+  .page-base{
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(var(--paper), var(--paper) 27px, var(--line) 28px);
+    background-color:var(--paper);
+    border-radius:2px 8px 8px 2px;
+    box-shadow: -6px 0 14px rgba(0,0,0,0.15) inset, 6px 6px 18px rgba(0,0,0,0.35);
+    padding:26px 22px 44px;
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+  /* stacked paper depth behind */
+  .stack-edge{
+    position:absolute;
+    background:var(--paper-shadow);
+    border-radius:2px 8px 8px 2px;
+  }
+  .stack-edge.e1{ inset:3px -3px -3px 3px; z-index:0; opacity:0.9;}
+  .stack-edge.e2{ inset:6px -6px -6px 6px; z-index:-1; opacity:0.7;}
+
+  .page-flip{
+    position:absolute; inset:0;
+    transform-style:preserve-3d;
+    transform-origin:left center;
+    transition:transform 0.7s cubic-bezier(.4,.1,.2,1);
+    z-index:3;
+    display:none;
+  }
+  .page-flip .face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    border-radius:2px 8px 8px 2px;
+    background:
+      repeating-linear-gradient(var(--paper), var(--paper) 27px, var(--line) 28px);
+    background-color:var(--paper);
+    padding:26px 22px 44px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    box-shadow:6px 6px 18px rgba(0,0,0,0.35);
+  }
+  .page-flip .face.back{
+    transform:rotateY(180deg);
+    background:
+      repeating-linear-gradient(#f2ead6, #f2ead6 27px, var(--line) 28px);
+  }
+  .page-flip.animating .face{
+    box-shadow: inset 40px 0 60px -20px rgba(0,0,0,0.25), 6px 6px 18px rgba(0,0,0,0.35);
+  }
+
+  .entry-date{
+    font-family:var(--mono); font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase;
+    color:#8a7c5f;
+  }
+  .entry-title{
+    font-family:var(--hand); font-weight:700; font-size:2rem; line-height:1.1; margin:6px 0 10px;
+  }
+  .entry-desc{
+    font-family:Georgia, 'Times New Roman', serif; font-size:1.05rem; line-height:1.55; white-space:pre-wrap; word-wrap:break-word;
+  }
+  .page-empty{
+    font-family:var(--hand); font-size:1.5rem; color:#a89a76; display:flex; align-items:center; justify-content:center; height:100%; text-align:center;
+  }
+
+  .corner{
+    position:absolute; bottom:10px; width:34px; height:34px;
+    cursor:pointer; z-index:6;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .corner.next{ right:8px; }
+  .corner.prev{ left:8px; }
+  .corner svg{ width:20px; height:20px; stroke:var(--accent); opacity:0.65; }
+  .corner:hover svg{ opacity:1; }
+  .corner.disabled{ opacity:0; pointer-events:none; }
+
+  .page-counter{
+    position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:0.65rem; letter-spacing:0.12em; color:#8a7c5f;
+    z-index:4;
+  }
+
+  .hint-bar{
+    max-width:820px; width:100%;
+    color:#c9bfa0; font-size:0.68rem; text-align:center; margin-top:16px; line-height:1.6;
+    opacity:0.75;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="title">📓 My Notebook</span>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <span id="syncStatus">syncing...</span>
+    <button id="previewBtn">Preview a JSON file</button>
+    <input type="file" id="syncFile" accept="application/json">
+  </div>
+</div>
+
+<div class="book-shell">
+  <div class="cover-back"></div>
+  <div class="spine">
+    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
+  <div class="pages-area">
+    <div class="stack-edge e2"></div>
+    <div class="stack-edge e1"></div>
+    <div class="page-base" id="pageBase"></div>
+    <div class="page-flip" id="pageFlip">
+      <div class="face front" id="faceFront"></div>
+      <div class="face back" id="faceBack"></div>
+    </div>
+    <div class="corner prev" id="prevBtn" title="Previous page">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="corner next" id="nextBtn" title="Next page">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="page-counter" id="pageCounter">— / —</div>
+  </div>
+</div>
+
+<p class="hint-bar">
+  Click the arrows, or press-and-drag from a bottom corner to flip like a real page.
+  This book reads <strong>entries.json</strong> sitting next to this file in your GitHub repo —
+  upload a new entries.json there to update what visitors see. "Preview a JSON file" above only
+  previews a file on your own screen and does not change the live site.
+</p>
+
+<script>
+(function(){
+  const DEFAULT_PAGES = [
+  {
+    "id": "idx",
+    "title": "Index",
+    "description": "Page  2  How to Teach Someone Stock Analysis\nPage  3  What to Look For in a Company\nPage  4  Growth vs ROE: The Sustainable Growth Rate\nPage  5  The 3 Pillars That Drive ROE Higher\nPage  6  Investment Checklist: Avoiding “Toxic” Growth\nPage  7  Case Study: Zaggle Prepaid — ROE Trajectory\nPage  8  The 100-Point Institutional Framework\nPage  9  Factors 1-2: Business Quality & Porter Five Forces\nPage 10  Factors 3-8: Management Through Risk\nPage 11  Preliminary Ranking (Qualitative)\nPage 12  Final Institutional Framework (20 Categories)\nPage 13  Preliminary Top 20 Ranking\nPage 14  Additional Enhancements Planned\nPage 15  Q: Is Rising Receivables a Red Flag?\nPage 16  Cash from Operating Activities — The Basics\nPage 17  Red Flags in Cash from Operating Activities\nPage 18  How to Analyze CFO + Real Examples",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 14
+  },
+  {
+    "id": "p1",
+    "title": "How to Teach Someone Stock Analysis",
+    "description": "Tell them the company name and let them analyze it. Walk them through the psychological biases at play, then teach using Porter's Five Forces and the mental models of Warren Buffett/Munger, Peter Lynch, Aswath Damodaran, Philip Fisher, and Peter Thiel — which businesses sustain in the long run, and which collapse.\n\nUnderstand a company's life cycle: nascent phase → growth phase → sustainability/maturity phase → decline phase (see Aswath Damodaran).\nExamples: Bondada Company, Cupid, Adani Green, Zaggle.\n\nDifferent phases call for different lenses:\n• Growth phase — no one focuses on positive cash flow yet.\n• At a certain scale — cash flow, margins, promoter holding, debtor/payable ratios, cash conversion cycle, ROE and ROCE start to matter.\n• Bear market — investors look for sustainability.\n• Bull market — investors buy growth at any price.\n\nLook at whether the business is niche, asset-heavy or asset-light, EPC, cyclical, commodity, riding a mega-trend, or a proxy play.",
+    "date": "2026-07-22",
+    "color": "#5b3a29",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p2",
+    "title": "What to Look For in a Company",
+    "description": "It's all about managing risk (risk-to-reward ratio) — Charlie Munger's \"picking up pennies in front of a road roller\" mental model, and \"more than you know.\"\n\nIf you're investing your own money at a young age, you can take calculated high risk. If you're managing others' money, a comprehensive checklist comes into play: corporate governance, Porter's Five Forces, etc.\n\nQ: What should one look for in a stock?\nA: Promoter integrity, company valuation, and whether the long-term theme can survive (longevity).\n\nYou can also invest in cyclical companies when the timing is right — see Howard Marks' letters and books.\n\nBuild a portfolio around: cyclical themes, growth at a reasonable price, special situations, and disciplined asset allocation + position sizing. Apply Porter's Five Forces to assess longevity and failure risk. See also CANSLIM, operating leverage/deleverage — \"How to Make Money in Stocks\" by William O'Neil.\n\nDiversification is very important for managing risk. Learn when to sell — see Kuntal Shah's \"Art of Selling Stocks\" talk (CFA Society India).\n\nBooks to read: Common Stocks and Uncommon Profits, How to Make Money in Stocks, Narrative and Numbers, Capital Returns, One Up on Wall Street, More Than You Know, books on mental models, Antifragile, The Black Swan, The Halo Effect.",
+    "date": "2026-07-22",
+    "color": "#5b3a29",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p3",
+    "title": "Growth vs ROE: The Sustainable Growth Rate",
+    "description": "Can a company growing revenue at 40% with a current ROE of just 10% see its ROE rise structurally? Yes — if the growth is execution-driven and operating leverage kicks in.\n\nThe Core Mismatch: Growth vs. Sustainable Growth Rate\nA company's Sustainable Growth Rate (SGR) — the max growth it can fund internally without new debt or dilution — is:\n\nSGR = ROE × (1 − Payout Ratio)\n\nEven retaining 100% of earnings, a 10% ROE only supports ~10% growth. If the company is actually growing at 40%, it's bridging that gap — either raising outside capital, or still in an early, high-investment phase where profits haven't caught up to scale yet.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p4",
+    "title": "The 3 Pillars That Drive ROE Higher",
+    "description": "If 40% growth is healthy, ROE scales up through the three DuPont components:\n\nROE = Net Profit Margin × Asset Turnover × Equity Multiplier\n\n1. Operating Leverage (margin expansion)\nRevenue scales over a largely fixed cost base (factories, R&D, overhead, tech). Today's 10% ROE reflects high upfront expense; as revenue surges, fixed costs spread over larger volumes and margins expand — pulling ROE up.\n\n2. Asset Efficiency (rising asset turnover)\nHigh-growth phases front-load capex; capital sits in under-utilized assets. As capacity utilization climbs (e.g. 30% → 80%), Asset Turnover (Sales / Total Assets) spikes — more revenue per unit of capital, boosting ROE.\n\n3. Maturing Capital Structure\nIf growth is debt-funded, the Equity Multiplier (Total Assets / Total Equity) rises — more financial risk, but it magnifies return on equity. As the business stabilizes and debt is optimized, net earnings on the equity base rise further.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p5",
+    "title": "Investment Checklist: Avoiding “Toxic” Growth",
+    "description": "The math favors ROE expansion — but confirm the 40% growth isn't toxic growth. Check for:\n\n• Working Capital Stress — is growth coming at the cost of ballooning debtor days or inventory build-up? If operating cash flow is deeply negative while accounting profits grow, any ROE gain is an illusion masked by future capital dilution.\n\n• Reinvestment Runway — if the company must keep reinvesting at a low incremental return just to keep growing, ROE stays suppressed. Look for Incremental ROIC tracking well above 10%.\n\nBottom line: a 10% ROE paired with 40% top-line growth is the classic footprint of a company in its high-investment/gestation phase. As growth matures into scale, operating leverage typically unlocks and drives a substantial ROE expansion.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p6",
+    "title": "Case Study: Zaggle Prepaid — ROE Trajectory",
+    "description": "Zaggle Prepaid Ocean Services shows classic top-line hyper-growth (~40-68% YoY) while ROE looked optically suppressed at 9.49% (FY26). A DuPont breakdown confirms the ROE is already trending up.\n\nHistorical DuPont & Growth Breakdown:\n                    FY24        FY25        FY26\nSales (Cr)          775.60      1,302.65    1,852.81\nSales Growth (%)    40.14%      67.95%      42.23%\nNet Profit (Cr)     44.02       87.48       132.86\nNet Worth (Cr)      575.38      1,247.61    1,400.19\nNet Profit Margin   5.68%       6.72%       7.17%\nAsset Turnover (x)  1.11x       1.00x       1.22x\nEquity Multiplier   1.21x       1.05x       1.09x\nROE                 7.65%       7.01%       9.49%\n\nWhy ROE looked low despite 40%+ growth — \"Equity Inundation\":\n1. Denominator Drag: Net Worth expanded from 48.75 Cr to 1,247.61 Cr (FY22→FY25), with idle cash ballooning to 653.14 Cr in FY25 (~50% of the balance sheet). Holding that much low-yield cash drags down Asset Turnover and ROE.\n2. Emerging Operating Leverage: Net Profit Margin rose steadily, 5.68% (FY24) → 7.17% (FY26); profits grew from 44.02 Cr to 132.86 Cr, faster than revenue, as fixed tech costs flattened relative to transaction value.\n\nFuture trajectory: in FY26, cash balance fell from 653.14 Cr to 535.15 Cr while Net Block doubled (104.18 Cr → 200.41 Cr) — capital is being deployed into core assets. Asset Turnover rebounded from 1.00x to 1.22x as a result.\n\nConclusion: the 9.49% ROE is temporary/transitional. As the cash drag clears and margins keep expanding past 7%, organic ROE should push into the mid-teens over the coming fiscal periods.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 15
+  },
+  {
+    "id": "p7",
+    "title": "The 100-Point Institutional Framework",
+    "description": "This is how institutional investors (BlackRock, Capital Group, Fidelity, Nomura, Goldman Sachs, etc.) evaluate companies — not one ratio, but a multi-factor scoring framework.\n\nFor a 45-company watchlist, the proposed Institutional Investment Scorecard (100 points) combines business quality, financial strength, growth, valuation, management, and industry structure:\n\nFactor                              Weight\nBusiness Quality & Moat               20\nPorter Five Forces                    10\nManagement & Capital Allocation        10\nFinancial Strength                    15\nGrowth Potential                      15\nValuation                             10\nIndustry Outlook                      10\nRisk Assessment                       10\nTotal                                 100\n\nThis framework is a starting point, not a substitute for current financial analysis — refine each score using up-to-date statements, valuation multiples, and analyst estimates.",
+    "date": "2026-07-22",
+    "color": "#b5402c",
+    "bold": true,
+    "fontSize": 15
+  },
+  {
+    "id": "p8",
+    "title": "Factors 1-2: Business Quality & Porter Five Forces",
+    "description": "1. Business Quality (20 pts) — evaluate:\nBrand strength, pricing power, switching costs, network effects, cost advantage, distribution, technology leadership.\n\nExample scores:\nCDSL 19 · Reliance 19 · Airtel 18 · Kaynes 17 · Coforge 17 · Indegene 16\n\n2. Porter Five Forces (10 pts) — assess:\nEntry barriers, supplier power, buyer power, substitutes, rivalry.\n\nExample scores:\nCDSL 10 · NSDL 10 · Reliance 9 · Airtel 9 · Kaynes 8 · Coforge 8",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p9",
+    "title": "Factors 3-8: Management Through Risk",
+    "description": "3. Management Quality (10 pts) — capital allocation, governance, promoter integrity, communication, acquisition discipline, execution, skin in the game.\n\n4. Financial Strength (15 pts) — ROE, ROCE, free cash flow, debt profile, interest coverage, cash conversion, working capital.\n\n5. Growth Potential (15 pts) — revenue CAGR, profit CAGR, addressable market, capacity expansion, export opportunities, new products, order book.\n\n6. Valuation (10 pts) — PE, EV/EBITDA, PEG, Price-to-Book, DCF, relative valuation.\n\n7. Industry Outlook (10 pts) — is the industry growing? Government support? Tech disruption? Long-term demand? Competitive intensity?\n\n8. Risk Assessment (10 pts) — customer concentration, regulatory risk, execution risk, commodity risk, currency risk, governance risk, valuation risk.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p10",
+    "title": "Preliminary Ranking (Qualitative)",
+    "description": "Rank  Company                              Score  Rating\n1     Central Depository Services (India)  95     ⭐ Strong Buy\n2     Reliance Industries                  94     ⭐ Strong Buy\n3     Bharti Airtel                        93     ⭐ Strong Buy\n4     National Securities Depository       92     ⭐ Strong Buy\n5     Kaynes Technology India              91     ⭐ Strong Buy\n6     Coforge                              90     ⭐ Strong Buy\n7     APAR Industries                      89     Buy\n8     Indegene                             89     Buy\n9     Syngene International                88     Buy\n10    Ratnamani Metals & Tubes              88     Buy\n11    Sansera Engineering                  87     Buy\n12    Amara Raja Energy & Mobility         87     Buy\n13    BLS International Services           86     Buy\n14    Advanced Enzyme Technologies         86     Buy\n15    Fineotex Chemical                    85     Buy\n\nWatchlist (good businesses, monitor valuation/execution):\nRateGain Travel Technologies, Aurionpro Solutions, Uniparts India, Rossell Techsys, ideaForge Technology, Balaji Amines, Macpower CNC Machines.\n\nNote: these are qualitative preliminary assessments based on business quality and industry characteristics — not yet based on the latest financial statements, valuation multiples, or analyst estimates.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 15
+  },
+  {
+    "id": "p11",
+    "title": "Final Institutional Framework (20 Categories)",
+    "description": "Refined into a buy-side institutional research report format — each company scored across 20 categories:\n\nFactor                                    Weight\nIndustry Structure (Porter Five Forces)     10\nEconomic Moat                               10\nManagement Quality                          10\nCapital Allocation                           5\nCorporate Governance                         5\nRevenue Growth                               5\nEarnings Growth                              5\nROE                                          5\nROCE                                         5\nFree Cash Flow                               5\nBalance Sheet                                5\nOrder Book / Business Visibility             5\nCompetitive Position                         5\nIndustry Tailwinds                           5\nValuation                                    5\nRisk Profile                                 5\nInnovation / Technology                      3\nESG / Sustainability                         2\nPromoter Alignment                           3\nLong-Term Optionality                        2\nTotal                                       100\n\nInvestment Grades:\n95-100  ⭐⭐⭐⭐⭐ Elite Compounder\n90-94   ⭐⭐⭐⭐⭐ Strong Buy\n85-89   ⭐⭐⭐⭐ Buy\n80-84   ⭐⭐⭐ Hold\n70-79   ⭐⭐ Watchlist\n<70     ⭐ Avoid",
+    "date": "2026-07-22",
+    "color": "#b5402c",
+    "bold": true,
+    "fontSize": 14
+  },
+  {
+    "id": "p12",
+    "title": "Preliminary Top 20 Ranking",
+    "description": "A qualitative starting point based on business quality, industry structure, and long-term competitive positioning — not a current valuation-based ranking.\n\nRank  Company                            Score  Rating\n1   Central Depository Services (India)   96   ⭐⭐⭐⭐⭐\n2   Reliance Industries                   95   ⭐⭐⭐⭐⭐\n3   Bharti Airtel                         94   ⭐⭐⭐⭐⭐\n4   National Securities Depository        93   ⭐⭐⭐⭐⭐\n5   Kaynes Technology India                92   ⭐⭐⭐⭐⭐\n6   Coforge                                91   ⭐⭐⭐⭐⭐\n7   APAR Industries                        90   ⭐⭐⭐⭐⭐\n8   Indegene                               89   ⭐⭐⭐⭐\n9   Syngene International                  89   ⭐⭐⭐⭐\n10  Ratnamani Metals & Tubes                88   ⭐⭐⭐⭐\n11  Sansera Engineering                    88   ⭐⭐⭐⭐\n12  Amara Raja Energy & Mobility            87   ⭐⭐⭐⭐\n13  Advanced Enzyme Technologies            87   ⭐⭐⭐⭐\n14  BLS International Services              86   ⭐⭐⭐⭐\n15  Fineotex Chemical                       86   ⭐⭐⭐⭐\n16  RateGain Travel Technologies             85   ⭐⭐⭐⭐\n17  Aurionpro Solutions                      85   ⭐⭐⭐⭐\n18  Rossell Techsys                          84   ⭐⭐⭐\n19  Uniparts India                           84   ⭐⭐⭐\n20  ideaForge Technology                     83   ⭐⭐⭐",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 14
+  },
+  {
+    "id": "p13",
+    "title": "Additional Enhancements Planned",
+    "description": "To bring the report closer to institutional-fund standard, next additions include:\n\n• Management Quality Score (capital allocation, governance, communication, execution)\n• Capital Allocation Score (reinvestment, dividends, acquisitions, debt management)\n• Business Quality Matrix (High / Medium / Low Quality)\n• Lifecycle Classification (Emerging, Growth, Compounder, Mature, Turnaround)\n• Key Investment Triggers (events that could materially improve the thesis)\n• Red Flags (issues that could change the thesis)\n• Quarterly Monitoring Checklist (KPIs to track every result)\n• 3-5 Year Scenario Analysis (Bull, Base, Bear)\n• Portfolio Role (Core Compounder, Growth, Cyclical, Special Situation, Watchlist)\n\nCaveat: the ranking is preliminary and qualitative. To be decision-ready, each score needs updating with current financials, valuation multiples, and management guidance before treating it as a final conviction ranking.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p14",
+    "title": "Q: Is Rising Receivables a Red Flag?",
+    "description": "An increase in accounts receivable (AR) can be a red flag — but it depends on context.\n\nPotential red flags:\n• Cash Flow Issues — receivables growing faster than revenue can strain cash even as paper profits rise.\n• Aggressive Revenue Recognition — booking revenue before cash is collected, inflating profit.\n• Deteriorating Credit Quality — extending credit to weaker customers to boost sales.\n• Economic/Industry Downturn — customers delaying payment, foreshadowing defaults.\n\nNot necessarily a red flag:\n• Business Growth — normal in fast-growing or long payment-cycle (B2B) businesses.\n• Seasonality — temporary AR increases from seasonal sales patterns.\n• Improved Terms — better terms offered strategically to win customers.\n\nKey metrics to check: Days Sales Outstanding (DSO) trend, AR Turnover Ratio, Bad Debt Expense, and Cash Flow from Operations vs. Net Income.\n\nConclusion: rising AR isn't automatically bad — look at the broader context (cash flow, revenue growth, customer payment behavior) before deciding.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p15",
+    "title": "Cash from Operating Activities — The Basics",
+    "description": "Cash from Operating Activities (CFO), from the cash flow statement, shows how much cash a company actually generates from its core business — unlike net income, which includes non-cash items.\n\nCash Inflows:\n• Cash from customers (sales revenue)\n• Interest and dividends received\n• Other operating receipts (refunds, reimbursements)\n\nCash Outflows:\n• Cash paid to suppliers and employees\n• Interest paid on loans\n• Taxes paid\n• Other operating expenses (rent, utilities)\n\nAdjustments for Non-Cash Items:\n• Depreciation & amortization (added back)\n• Changes in working capital (receivables, inventory, payables)\n\nFormula:\nCFO = Net Income + Non-Cash Expenses ± Changes in Working Capital",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p16",
+    "title": "Red Flags in Cash from Operating Activities",
+    "description": "1. Negative CFO — consistently negative means the core business isn't self-sustaining; may signal poor profitability or high costs.\n\n2. Net Income vs. CFO Gap — positive net income but negative/much lower CFO suggests aggressive revenue recognition or poor cash collection.\n\n3. Rising Accounts Receivable — AR growing without matching cash collections means customers are delaying payment.\n\n4. Rising Inventory — inventory building up faster than sales can mean overproduction or difficulty selling.\n\n5. Declining Accounts Payable — paying suppliers too quickly relative to inventory/expenses strains cash.\n\n6. Heavy Non-Cash Add-Backs — large depreciation/stock-comp add-backs can artificially inflate CFO.\n\n7. High Interest/Tax Payments — a large share of cash going to interest or tax can signal excess debt or poor tax planning.\n\n8. Volatile CFO — erratic operating cash flow may indicate unstable revenue or poor working-capital management.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  },
+  {
+    "id": "p17",
+    "title": "How to Analyze CFO + Real Examples",
+    "description": "How to analyze it:\n1. Compare CFO to Net Income — they should broadly align over time; a persistent gap can signal aggressive accounting.\n2. Trend Analysis — a declining CFO trend suggests deteriorating operational efficiency.\n3. Compare to Industry Peers — lower CFO than peers may point to competitive weakness.\n4. Check Free Cash Flow — FCF = CFO − CapEx. Positive CFO but negative FCF means heavy spend on maintaining/expanding operations.\n\nReal-world red-flag patterns:\n• Aggressive Revenue Recognition — high net income, low CFO, because sales are booked before cash arrives.\n• Overstocking Inventory — positive CFO but inventory spiking, risking future write-downs.\n• Delayed Supplier Payments — CFO propped up by stretching payables — unsustainable, damages supplier relationships.\n• High Bad Debt Expense — AR growing alongside rising bad debt signals customers defaulting, which will eventually hit cash flow.\n\nBottom line: CFO is a critical health measure. Red flags here often point to poor cash management or aggressive accounting — always read it alongside net income, working capital, and free cash flow for the full picture.",
+    "date": "2026-07-22",
+    "color": "#2b2620",
+    "bold": false,
+    "fontSize": 16
+  }
+];
+  let pages = [];
+  let currentIndex = 0;
+  const pageBase = document.getElementById('pageBase');
+  const pageFlip = document.getElementById('pageFlip');
+  const faceFront = document.getElementById('faceFront');
+  const faceBack = document.getElementById('faceBack');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageCounter = document.getElementById('pageCounter');
+  const syncStatus = document.getElementById('syncStatus');
+  const previewBtn = document.getElementById('previewBtn');
+  const syncFile = document.getElementById('syncFile');
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  function renderContent(container, entry){
+    if(!entry){
+      container.innerHTML = '<div class="page-empty">No entries yet.<br>Add some in the editor tool.</div>';
+      return;
+    }
+    const color = entry.color || '#2b2620';
+    const weight = entry.bold ? '700' : '400';
+    const size = (entry.fontSize || 16) + 'px';
+    container.innerHTML = `
+      <div class="entry-date">${escapeHtml(entry.date || '')}</div>
+      <div class="entry-title" style="color:${color}; font-weight:${weight};">${escapeHtml(entry.title || '')}</div>
+      <div class="entry-desc" style="color:${color}; font-weight:${weight}; font-size:${size};">${escapeHtml(entry.description || '')}</div>
+    `;
+  }
+
+  function updateStaticViews(){
+    renderContent(pageBase, pages[currentIndex]);
+    pageCounter.textContent = pages.length ? (currentIndex+1) + ' / ' + pages.length : '0 / 0';
+    prevBtn.classList.toggle('disabled', currentIndex <= 0);
+    nextBtn.classList.toggle('disabled', currentIndex >= pages.length - 1);
+  }
+
+  let isAnimating = false;
+
+  function flipNext(){
+    if(isAnimating || currentIndex >= pages.length - 1) return;
+    isAnimating = true;
+    renderContent(faceFront, pages[currentIndex]);
+    renderContent(faceBack, pages[currentIndex+1]);
+    pageBase.style.visibility = 'hidden';
+    pageFlip.style.display = 'block';
+    pageFlip.classList.add('animating');
+    pageFlip.style.transition = 'none';
+    pageFlip.style.transform = 'rotateY(0deg)';
+    void pageFlip.offsetWidth;
+    pageFlip.style.transition = '';
+    requestAnimationFrame(()=>{
+      pageFlip.style.transform = 'rotateY(-180deg)';
+    });
+    setTimeout(()=>{
+      currentIndex++;
+      pageFlip.style.display = 'none';
+      pageFlip.classList.remove('animating');
+      pageBase.style.visibility = 'visible';
+      updateStaticViews();
+      isAnimating = false;
+    }, 720);
+  }
+
+  function flipPrev(){
+    if(isAnimating || currentIndex <= 0) return;
+    isAnimating = true;
+    renderContent(faceBack, pages[currentIndex]);
+    renderContent(faceFront, pages[currentIndex-1]);
+    pageBase.style.visibility = 'hidden';
+    pageFlip.style.display = 'block';
+    pageFlip.classList.add('animating');
+    pageFlip.style.transition = 'none';
+    pageFlip.style.transform = 'rotateY(-180deg)';
+    void pageFlip.offsetWidth;
+    pageFlip.style.transition = '';
+    requestAnimationFrame(()=>{
+      pageFlip.style.transform = 'rotateY(0deg)';
+    });
+    setTimeout(()=>{
+      currentIndex--;
+      pageFlip.style.display = 'none';
+      pageFlip.classList.remove('animating');
+      pageBase.style.visibility = 'visible';
+      updateStaticViews();
+      isAnimating = false;
+    }, 720);
+  }
+
+  nextBtn.addEventListener('click', flipNext);
+  prevBtn.addEventListener('click', flipPrev);
+
+  // Drag-to-flip from corners
+  function setupDrag(cornerEl, direction){
+    let dragging = false;
+    let startX = 0;
+    let pageWidth = 1;
+
+    function pointerDown(e){
+      const boundaryIndex = direction === 'next' ? pages.length - 1 : 0;
+      if(isAnimating || currentIndex === boundaryIndex) return;
+      dragging = true;
+      startX = (e.touches ? e.touches[0].clientX : e.clientX);
+      pageWidth = pageBase.getBoundingClientRect().width || 1;
+
+      if(direction === 'next'){
+        renderContent(faceFront, pages[currentIndex]);
+        renderContent(faceBack, pages[currentIndex+1]);
+      } else {
+        renderContent(faceBack, pages[currentIndex]);
+        renderContent(faceFront, pages[currentIndex-1]);
+      }
+      pageBase.style.visibility = 'hidden';
+      pageFlip.style.display = 'block';
+      pageFlip.style.transition = 'none';
+      pageFlip.style.transform = direction === 'next' ? 'rotateY(0deg)' : 'rotateY(-180deg)';
+      e.preventDefault();
+    }
+
+    function pointerMove(e){
+      if(!dragging) return;
+      const x = (e.touches ? e.touches[0].clientX : e.clientX);
+      const delta = x - startX;
+      let ratio = direction === 'next' ? (-delta / pageWidth) : ((delta / pageWidth) - 1);
+      ratio = Math.max(-1, Math.min(0, ratio));
+      pageFlip.style.transform = 'rotateY(' + (ratio * 180) + 'deg)';
+    }
+
+    function pointerUp(e){
+      if(!dragging) return;
+      dragging = false;
+      const transform = pageFlip.style.transform;
+      const match = transform.match(/-?[\d.]+/);
+      const currentDeg = match ? parseFloat(match[0]) : 0;
+      pageFlip.style.transition = '';
+      const shouldComplete = direction === 'next' ? currentDeg < -90 : currentDeg > -90;
+
+      if(shouldComplete){
+        pageFlip.style.transform = direction === 'next' ? 'rotateY(-180deg)' : 'rotateY(0deg)';
+        setTimeout(()=>{
+          currentIndex += direction === 'next' ? 1 : -1;
+          pageFlip.style.display = 'none';
+          pageBase.style.visibility = 'visible';
+          updateStaticViews();
+        }, 400);
+      } else {
+        pageFlip.style.transform = direction === 'next' ? 'rotateY(0deg)' : 'rotateY(-180deg)';
+        setTimeout(()=>{
+          pageFlip.style.display = 'none';
+          pageBase.style.visibility = 'visible';
+        }, 400);
+      }
+    }
+
+    cornerEl.addEventListener('mousedown', pointerDown);
+    cornerEl.addEventListener('touchstart', pointerDown, {passive:false});
+    window.addEventListener('mousemove', pointerMove);
+    window.addEventListener('touchmove', pointerMove, {passive:false});
+    window.addEventListener('mouseup', pointerUp);
+    window.addEventListener('touchend', pointerUp);
+  }
+
+  setupDrag(nextBtn, 'next');
+  setupDrag(prevBtn, 'prev');
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowRight') flipNext();
+    if(e.key === 'ArrowLeft') flipPrev();
+  });
+
+  function loadPages(data, sourceLabel){
+    pages = Array.isArray(data) ? data : [];
+    currentIndex = 0;
+    updateStaticViews();
+    syncStatus.textContent = sourceLabel;
+  }
+
+  // Real sync: fetch entries.json sitting next to this file (works on GitHub Pages)
+  fetch('entries.json', {cache:'no-store'})
+    .then(res => { if(!res.ok) throw new Error('not found'); return res.json(); })
+    .then(data => {
+      if(Array.isArray(data) && data.length > 0){
+        loadPages(data, 'synced ✓');
+      } else {
+        loadPages(DEFAULT_PAGES, 'showing sample pages (entries.json is empty)');
+      }
+    })
+    .catch(() => {
+      loadPages(DEFAULT_PAGES, 'showing sample pages (entries.json not reachable — open via a server, not by double-clicking the file)');
+    });
+
+  // Local preview only — does not touch the live entries.json
+  previewBtn.addEventListener('click', ()=> syncFile.click());
+  syncFile.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt)=>{
+      try{
+        const data = JSON.parse(evt.target.result);
+        loadPages(data, 'previewing local file (not live)');
+      }catch(err){
+        alert('That file could not be read as JSON.');
+      }
+    };
+    reader.readAsText(file);
+  });
+})();
+</script>
+</body>
+</html>
